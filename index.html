@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="くまべえ家計簿">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffecf0">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>くまべえ家計簿（保存テスト）</title>
+<style>
+  :root { --bg:#fff7f9; --card:#ffffff; --pink:#ffd6e0; --accent:#e8718d; --text:#4a3a3a; --sub:#8a7a7a; --ok:#4caf7a; --ng:#d9534f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,"Hiragino Sans",sans-serif; font-size:18px;
+         padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 24px); }
+  header { display:flex; align-items:center; gap:12px; padding:16px 0 8px; }
+  header img { width:56px; height:56px; border-radius:14px; }
+  h1 { font-size:20px; margin:0; }
+  .ver { font-size:13px; color:var(--sub); }
+  .card { background:var(--card); border-radius:18px; padding:16px; margin:12px 0; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+  .row { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
+  .row span:last-child { font-weight:bold; text-align:right; }
+  .ok { color:var(--ok); } .ng { color:var(--ng); }
+  button { display:block; width:100%; font-size:20px; padding:16px; margin:10px 0; border:none; border-radius:16px;
+           background:var(--pink); color:var(--text); font-weight:bold; }
+  button.main { background:var(--accent); color:#fff; }
+  button.danger { background:#f3f3f3; color:var(--ng); font-size:16px; }
+  .big { font-size:40px; font-weight:bold; text-align:center; margin:4px 0; }
+  ul { padding-left:20px; margin:4px 0; font-size:15px; color:var(--sub); }
+  #msg { min-height:1.5em; text-align:center; font-weight:bold; }
+  input[type=file] { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <img src="icon-180.png" alt="">
+  <div><h1>くまべえ家計簿<br>保存テスト</h1><div class="ver" id="ver"></div></div>
+</header>
+
+<div class="card">
+  <div class="row"><span>開き方</span><span id="mode"></span></div>
+  <div class="row"><span>消さないで設定（persist）</span><span id="persist"></span></div>
+  <div class="row"><span>使っている容量</span><span id="usage"></span></div>
+</div>
+
+<div class="card">
+  <div>記録の件数（IndexedDB）</div>
+  <div class="big" id="countIdb">-</div>
+  <div class="row"><span>記録の件数（localStorage）</span><span id="countLs">-</span></div>
+  <div>最近の記録</div>
+  <ul id="recent"></ul>
+</div>
+
+<button class="main" id="add">＋ テスト記録を1件ふやす</button>
+<div id="msg"></div>
+<button id="export">バックアップを書き出す</button>
+<button id="import">バックアップから戻す</button>
+<input type="file" id="file" accept="application/json,.json">
+<button class="danger" id="clear">（テスト用）記録をぜんぶ消す</button>
+
+<script>
+const VERSION = 'test-1';
+const DB_NAME = 'kumabei-kakeibo-test';
+const STORE = 'records';
+const LS_KEY = 'kumabei-kakeibo-test-records';
+document.getElementById('ver').textContent = 'バージョン ' + VERSION;
+
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE, { keyPath: 'id' });
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function tx(mode, fn) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(STORE, mode);
+    const result = fn(t.objectStore(STORE));
+    t.oncomplete = () => resolve(result && result.result !== undefined ? result.result : undefined);
+    t.onerror = () => reject(t.error);
+  });
+}
+const getAll = () => tx('readonly', s => s.getAll());
+const putAll = recs => tx('readwrite', s => { recs.forEach(r => s.put(r)); });
+const clearAll = () => tx('readwrite', s => s.clear());
+
+function lsGet() { try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; } }
+function lsSet(recs) { try { localStorage.setItem(LS_KEY, JSON.stringify(recs)); } catch {} }
+
+function say(text, ok = true) {
+  const m = document.getElementById('msg');
+  m.textContent = text; m.className = ok ? 'ok' : 'ng';
+}
+
+async function refresh() {
+  const standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  document.getElementById('mode').textContent = standalone ? 'ホーム画面アプリ' : 'Safari';
+  const p = document.getElementById('persist');
+  if (navigator.storage && navigator.storage.persisted) {
+    const on = await navigator.storage.persisted();
+    p.textContent = on ? 'ON' : 'OFF'; p.className = on ? 'ok' : 'ng';
+  } else { p.textContent = '非対応'; p.className = 'ng'; }
+  if (navigator.storage && navigator.storage.estimate) {
+    const e = await navigator.storage.estimate();
+    document.getElementById('usage').textContent = Math.round((e.usage || 0) / 1024) + ' KB';
+  }
+  const recs = (await getAll()).sort((a, b) => b.id.localeCompare(a.id));
+  document.getElementById('countIdb').textContent = recs.length + ' 件';
+  document.getElementById('countLs').textContent = lsGet().length + ' 件';
+  document.getElementById('recent').innerHTML =
+    recs.slice(0, 5).map(r => `<li>${r.label}（${r.mode}）</li>`).join('');
+}
+
+async function requestPersist() {
+  if (navigator.storage && navigator.storage.persist) {
+    try { await navigator.storage.persist(); } catch {}
+  }
+}
+
+document.getElementById('add').onclick = async () => {
+  const now = new Date();
+  const standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  const rec = {
+    id: now.toISOString() + '-' + Math.random().toString(36).slice(2, 6),
+    label: now.toLocaleString('ja-JP'),
+    mode: standalone ? 'ホーム画面' : 'Safari',
+  };
+  await putAll([rec]);
+  lsSet([...lsGet(), rec]);
+  await requestPersist();
+  say('記録しました 🐻');
+  refresh();
+};
+
+document.getElementById('export').onclick = async () => {
+  const recs = await getAll();
+  const data = JSON.stringify({ app: 'kumabei-kakeibo', version: VERSION, exportedAt: new Date().toISOString(), records: recs }, null, 1);
+  const d = new Date();
+  const name = `kakeibo-backup-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}.json`;
+  const file = new File([data], name, { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'くまべえ家計簿バックアップ' });
+      say('書き出しました（' + recs.length + '件）');
+    } catch (e) {
+      if (e.name !== 'AbortError') say('書き出しに失敗：' + e.message, false);
+    }
+  } else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = name; a.click();
+    say('ダウンロードしました（' + recs.length + '件）');
+  }
+};
+
+document.getElementById('import').onclick = () => document.getElementById('file').click();
+document.getElementById('file').onchange = async ev => {
+  const f = ev.target.files[0];
+  if (!f) return;
+  try {
+    const obj = JSON.parse(await f.text());
+    if (obj.app !== 'kumabei-kakeibo' || !Array.isArray(obj.records)) throw new Error('家計簿のバックアップではありません');
+    await putAll(obj.records);
+    const ids = new Set(lsGet().map(r => r.id));
+    lsSet([...lsGet(), ...obj.records.filter(r => !ids.has(r.id))]);
+    say(obj.records.length + '件を戻しました 🐻');
+  } catch (e) {
+    say('戻せませんでした：' + e.message, false);
+  }
+  ev.target.value = '';
+  refresh();
+};
+
+document.getElementById('clear').onclick = async () => {
+  if (!confirm('テスト記録をぜんぶ消します。よろしいですか？')) return;
+  await clearAll();
+  lsSet([]);
+  say('消しました');
+  refresh();
+};
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+refresh();
+</script>
+</body>
+</html>
