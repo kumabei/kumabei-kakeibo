@@ -5,6 +5,7 @@ import {
   visibleSorted, listWithCurrent, pickDefaultMethod, expenseOnDate, isFirstRecordToday, colorOf,
 } from '../logic.js';
 import { SCENES, recordReaction, renderKuma } from '../kuma.js';
+import { LINES } from '../lines.js';
 import { el, showToast, openSheet, closeSheet } from '../ui.js';
 import { show } from '../nav.js';
 
@@ -53,10 +54,17 @@ export function render(root, { entering = false } = {}) {
 
 async function submitNew() {
   const f = form;
-  const entry = await addEntry({
-    type: f.type, amount: amountValue(f.amountStr), categoryId: f.categoryId,
-    methodId: f.methodId, date: f.date, memo: f.memo.trim(),
-  });
+  let entry;
+  try {
+    entry = await addEntry({
+      type: f.type, amount: amountValue(f.amountStr), categoryId: f.categoryId,
+      methodId: f.methodId, date: f.date, memo: f.memo.trim(),
+    });
+  } catch (e) {
+    busyUntil = 0;
+    showToast('保存できませんでした：' + e.message);
+    return;
+  }
   setKuma(recordReaction(entry, isFirstRecordToday(state.entries, entry)));
   form = blankForm(f.type, f.methodId);
   bumpNext = true;
@@ -68,13 +76,24 @@ async function submitNew() {
   });
 }
 
-// Undo: delete the entry and put its values back into the form, so a typo is one key away.
+// Undo: delete the entry. If the form is still untouched, put its values back so a typo is one
+// key away; otherwise leave whatever the user has started typing alone and just say it's gone.
 async function undo(entry) {
-  await removeEntry(entry.id);
-  form = {
-    type: entry.type, amountStr: String(entry.amount), categoryId: entry.categoryId,
-    methodId: entry.methodId ?? form.methodId, date: entry.date, memo: entry.memo, memoOpen: entry.memo !== '',
-  };
+  try {
+    await removeEntry(entry.id);
+  } catch (e) {
+    showToast('消せませんでした：' + e.message);
+    return;
+  }
+  if (form.amountStr === '' && form.categoryId === null) {
+    form = {
+      type: entry.type, amountStr: String(entry.amount), categoryId: entry.categoryId,
+      methodId: entry.methodId ?? form.methodId, date: entry.date, memo: entry.memo, memoOpen: entry.memo !== '',
+    };
+  } else {
+    const cat = state.categories.find(c => c.id === entry.categoryId);
+    showToast(`${cat?.name ?? ''} ${formatYen(entry.amount)}を取り消しました`);
+  }
   show('input');
 }
 
@@ -155,16 +174,26 @@ export function openEditor(entry) {
     date: entry.date, memo: entry.memo ?? '', memoOpen: Boolean(entry.memo),
   };
   const save = async () => {
-    await updateEntry({
-      ...entry, type: f.type, amount: amountValue(f.amountStr), categoryId: f.categoryId,
-      methodId: f.methodId, date: f.date, memo: f.memo.trim(),
-    });
+    try {
+      await updateEntry({
+        ...entry, type: f.type, amount: amountValue(f.amountStr), categoryId: f.categoryId,
+        methodId: f.methodId, date: f.date, memo: f.memo.trim(),
+      });
+    } catch (e) {
+      showToast('保存できませんでした：' + e.message);
+      return;
+    }
     closeSheet();
-    showToast('直しました', { image: SCENES.recorded.image });
+    showToast(LINES.edited, { image: SCENES.recorded.image });
   };
   const del = async () => {
     if (!confirm('この記録を消しますか？')) return;
-    await removeEntry(entry.id);
+    try {
+      await removeEntry(entry.id);
+    } catch (e) {
+      showToast('消せませんでした：' + e.message);
+      return;
+    }
     closeSheet();
     showToast(SCENES.deleted.line, { image: SCENES.deleted.image });
   };

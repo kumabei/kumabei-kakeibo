@@ -12,4 +12,5 @@ export const LINES = {
   backupNudge: 'そろそろバックアップしとこ？',
   backupDone: 'ありがとう！安心だね',
   missing: '金額と分類を入れてね',
+  edited: '直しました',
 };
