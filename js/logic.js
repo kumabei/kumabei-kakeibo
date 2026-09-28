@@ -104,3 +104,73 @@ export function applyKey(amountStr, key) {
 export function amountValue(amountStr) {
   return amountStr === '' ? 0 : Number(amountStr);
 }
+
+// ---- initial data, colors and ordering ----
+
+export const SCHEMA_VERSION = 1;
+
+// Pastel colors per group of categories (spec 5). bg = button, strong = selected button and dots.
+export const COLORS = {
+  food:    { bg: '#dff3e0', strong: '#9fd4a3' },
+  outing:  { bg: '#ffe6cc', strong: '#f5b77a' },
+  living:  { bg: '#dcebfa', strong: '#93bde8' },
+  family:  { bg: '#fde0ea', strong: '#f2a3bd' },
+  move:    { bg: '#ececec', strong: '#b5b5b5' },
+  medical: { bg: '#fbd9d9', strong: '#ee9a9a' },
+  monthly: { bg: '#ebe0f5', strong: '#c0a4e0' },
+  other:   { bg: '#f3ebdd', strong: '#d4bf98' },
+  income:  { bg: '#fff4c2', strong: '#f0d468' },
+};
+
+const EXPENSE_DEFAULTS = [
+  ['食費', 'food'], ['外食', 'outing'], ['おやつ', 'food'], ['日用品', 'living'], ['服', 'family'],
+  ['子供', 'family'], ['教育費', 'family'], ['交際費', 'outing'], ['車', 'move'], ['ガソリン', 'move'],
+  ['交通費', 'move'], ['イベント・レジャー', 'outing'], ['医療費', 'medical'], ['通信費', 'monthly'],
+  ['光熱費', 'monthly'], ['住居費', 'monthly'], ['家具・家電', 'living'], ['お小遣い', 'family'],
+  ['固定費', 'monthly'], ['雑費', 'other'],
+];
+
+export function initialCategories() {
+  return EXPENSE_DEFAULTS.map(([name, color], i) =>
+    ({ id: `e${pad2(i + 1)}`, type: 'expense', name, order: i, hidden: false, color }));
+}
+
+export function initialMethods() {
+  return ['現金', 'カード', '電子マネー'].map((name, i) => ({ id: `m${i + 1}`, name, order: i, hidden: false }));
+}
+
+export function initialSettings() {
+  return { lastMethodId: 'm1', lastBackupAt: null, lastChangedAt: null, nudgeSnoozedOn: null, schemaVersion: SCHEMA_VERSION };
+}
+
+export function newCategoryColor(type) {
+  return type === 'income' ? 'income' : 'other';
+}
+
+export function colorOf(category) {
+  return COLORS[category?.color] ?? COLORS.other;
+}
+
+export function allSorted(list) {
+  return [...list].sort((a, b) => a.order - b.order);
+}
+
+export function visibleSorted(list) {
+  return allSorted(list).filter(x => !x.hidden);
+}
+
+// Visible items, plus the current one if it has been hidden since (editing an old entry).
+export function listWithCurrent(list, currentId) {
+  const visible = visibleSorted(list);
+  const current = list.find(x => x.id === currentId);
+  return current && current.hidden ? [...visible, current] : visible;
+}
+
+export function pickDefaultMethod(methods, lastMethodId) {
+  const visible = visibleSorted(methods);
+  return (visible.find(m => m.id === lastMethodId) ?? visible[0])?.id ?? null;
+}
+
+export function canHide(list, id) {
+  return list.some(x => !x.hidden && x.id !== id);
+}
