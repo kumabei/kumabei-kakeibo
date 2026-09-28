@@ -87,3 +87,20 @@ export function formatYen(n) {
 export function memoHead(memo, n = 12) {
   return memo.length > n ? memo.slice(0, n) + '…' : memo;
 }
+
+// ---- keypad ----
+
+export const MAX_DIGITS = 8;
+
+// amountStr holds digits without leading zeros; '' means 0 yen.
+export function applyKey(amountStr, key) {
+  if (key === 'clear') return '';
+  if (key === 'back') return amountStr.slice(0, -1);
+  if (!/^(\d|00)$/.test(key)) return amountStr;
+  const next = (amountStr + key).replace(/^0+/, '');
+  return next.length > MAX_DIGITS ? amountStr : next;
+}
+
+export function amountValue(amountStr) {
+  return amountStr === '' ? 0 : Number(amountStr);
+}
