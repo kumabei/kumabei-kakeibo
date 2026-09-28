@@ -58,7 +58,7 @@ h1 { font-size: 20px; margin: 0; }
 .seg button.on { background: var(--accent); color: #fff; }
 .today-spend { font-size: 14px; color: var(--sub); }
 .today-spend b { color: var(--text); }
-.amount-row { display: flex; align-items: center; justify-content: space-between; height: 76px; }
+.amount-row { display: flex; align-items: center; justify-content: space-between; height: 60px; }
 .amount { font-size: 40px; font-weight: bold; }
 .amount.zero { color: #d8c8cc; }
 .amount .yen { font-size: 24px; margin-right: 4px; }
@@ -66,18 +66,18 @@ h1 { font-size: 20px; margin: 0; }
 .kuma-input img { width: 64px; height: 64px; }
 .kuma-input .bubble { position: absolute; right: 68px; top: 12px; white-space: nowrap; }
 .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.cat { min-height: 42px; border-radius: 12px; background: var(--cat-bg); font-size: 14px; line-height: 1.15; padding: 4px 2px; border: 3px solid transparent; }
+.cat { min-height: 36px; border-radius: 12px; background: var(--cat-bg); font-size: 14px; line-height: 1.15; padding: 4px 2px; border: 3px solid transparent; }
 .cat.on { background: var(--cat-strong); border-color: var(--text); font-weight: bold; }
 .cat.add { background: #fff; border: 2px dashed var(--pink); grid-column: span 4; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.chip { position: relative; background: #fff; border-radius: 18px; padding: 7px 12px; font-size: 15px; border: 2px solid var(--line); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chip { position: relative; background: #fff; border-radius: 18px; padding: 5px 12px; font-size: 15px; border: 2px solid var(--line); }
 .chip.on { background: var(--pink); border-color: var(--accent); font-weight: bold; }
 .date-input { position: absolute; inset: 0; width: 100%; opacity: 0; }
 .memo { width: 100%; margin-top: 8px; font-size: 17px; padding: 10px; border-radius: 12px; border: 2px solid var(--line); }
-.keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
-.key { height: 50px; border-radius: 12px; background: #fff; font-size: 24px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+.key { height: 44px; border-radius: 12px; background: #fff; font-size: 24px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
 .key.fn { background: #f6eef0; font-size: 20px; }
-.record { grid-column: span 3; height: 50px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 20px; font-weight: bold; }
+.record { grid-column: span 3; height: 44px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 20px; font-weight: bold; }
 .record.not-ready { background: #f0c9d3; }
 .record.bump { animation: bump .18s ease-out; }
 @keyframes bump { 0% { transform: scale(1.05); } 100% { transform: scale(1); } }
