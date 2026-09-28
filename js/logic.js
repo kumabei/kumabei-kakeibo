@@ -174,3 +174,60 @@ export function pickDefaultMethod(methods, lastMethodId) {
 export function canHide(list, id) {
   return list.some(x => !x.hidden && x.id !== id);
 }
+
+// ---- totals (always computed from entries; nothing is stored) ----
+
+export function entriesInMonth(entries, ym) {
+  return entries.filter(e => monthOf(e.date) === ym);
+}
+
+export function monthTotals(entries, ym) {
+  let expense = 0;
+  let income = 0;
+  for (const e of entriesInMonth(entries, ym)) {
+    if (e.type === 'expense') expense += e.amount;
+    else income += e.amount;
+  }
+  return { expense, income, diff: income - expense };
+}
+
+export function methodBreakdown(entries, methods, ym) {
+  const sums = new Map();
+  for (const e of entriesInMonth(entries, ym)) {
+    if (e.type === 'expense') sums.set(e.methodId, (sums.get(e.methodId) ?? 0) + e.amount);
+  }
+  return allSorted(methods)
+    .filter(m => sums.get(m.id) > 0)
+    .map(m => ({ methodId: m.id, name: m.name, amount: sums.get(m.id) }));
+}
+
+export function expenseByDate(entries, ym) {
+  const out = {};
+  for (const e of entriesInMonth(entries, ym)) {
+    if (e.type === 'expense') out[e.date] = (out[e.date] ?? 0) + e.amount;
+  }
+  return out;
+}
+
+export function expenseOnDate(entries, dateStr) {
+  return entries.reduce((sum, e) => (e.type === 'expense' && e.date === dateStr ? sum + e.amount : sum), 0);
+}
+
+export function datesWithEntries(entries, ym) {
+  return new Set(entriesInMonth(entries, ym).map(e => e.date));
+}
+
+export function entriesOnDate(entries, dateStr) {
+  return entries.filter(e => e.date === dateStr).sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export function sortNewestFirst(entries) {
+  return [...entries].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+}
+
+// Kumabee only talks on the first record of the day, judged by when it was recorded.
+export function isFirstRecordToday(entries, entry) {
+  const day = toDateStr(new Date(entry.createdAt));
+  return !entries.some(e => e.id !== entry.id && e.createdAt < entry.createdAt
+    && toDateStr(new Date(e.createdAt)) === day);
+}
