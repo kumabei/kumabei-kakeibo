@@ -81,3 +81,15 @@ h1 { font-size: 20px; margin: 0; }
 .record.not-ready { background: #f0c9d3; }
 .record.bump { animation: bump .18s ease-out; }
 @keyframes bump { 0% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+/* ---- home ---- */
+.home-head { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.gear { font-size: 26px; width: 44px; height: 44px; }
+.nudge { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: #fff4c2; border-radius: 16px; padding: 10px 12px; margin: 10px 0; }
+.nudge img { width: 48px; height: 48px; object-fit: contain; }
+.nudge-text { flex: 1; font-weight: bold; }
+.nudge-actions { display: flex; gap: 8px; width: 100%; }
+.nudge-actions button { flex: 1; padding: 10px; border-radius: 12px; background: #fff; font-weight: bold; }
+.nudge-actions .primary { background: var(--accent); color: #fff; }
+.totals .row { font-size: 19px; }
+.kuma-home img { width: 120px; height: 120px; }
