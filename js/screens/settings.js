@@ -5,6 +5,7 @@ import { el, setChildren, makeSortable, showToast } from '../ui.js';
 import { exportBackup, importBackup } from '../backup.js';
 import { show, rerender } from '../nav.js';
 import { VERSION } from '../version.js';
+import { SCENES, renderKuma } from '../kuma.js';
 
 function askName(current = '') {
   return prompt('名前を入れてね', current)?.trim() || null;
@@ -62,6 +63,7 @@ function backupSection() {
 }
 
 export function render(root) {
+  const kuma = el('div', { class: 'kuma kuma-small' });
   setChildren(root,
     el('div', { class: 'settings-head' },
       el('button', { class: 'link', onclick: () => show('home') }, '‹ もどる'),
@@ -70,5 +72,7 @@ export function render(root) {
     section('収入の分類', 'categories', state.categories.filter(c => c.type === 'income'), name => addCategory('income', name)),
     section('支払い方法', 'methods', state.methods, name => addMethod(name)),
     backupSection(),
+    kuma,
     el('div', { class: 'version' }, `バージョン ${VERSION}`));
+  renderKuma(kuma, { image: SCENES.peek.image });
 }

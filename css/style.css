@@ -72,7 +72,8 @@ h1 { font-size: 20px; margin: 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .chip { position: relative; background: #fff; border-radius: 18px; padding: 5px 12px; font-size: 15px; border: 2px solid var(--line); }
 .chip.on { background: var(--pink); border-color: var(--accent); font-weight: bold; }
-.date-input { position: absolute; inset: 0; width: 100%; opacity: 0; }
+.date-input { position: absolute; inset: 0; width: 100%; opacity: 0; font-size: 16px; }
+.date-chip { overflow: hidden; }
 .memo { width: 100%; margin-top: 8px; font-size: 17px; padding: 10px; border-radius: 12px; border: 2px solid var(--line); }
 .keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
 .key { height: 44px; border-radius: 12px; background: #fff; font-size: 24px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,.06); }

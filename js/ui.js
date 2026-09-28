@@ -83,16 +83,20 @@ export function makeSortable(listEl, onDone) {
     const row = handle.closest('[data-id]');
     const before = ids();
     row.classList.add('dragging');
-    handle.setPointerCapture(ev.pointerId);
+    try { handle.setPointerCapture(ev.pointerId); } catch {}
     const move = e => {
       const others = [...listEl.querySelectorAll('[data-id]')].filter(r => r !== row);
       const target = others.find(r => e.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
       listEl.insertBefore(row, target ?? null);
     };
+    let ended = false;
     const end = () => {
+      if (ended) return;
+      ended = true;
       handle.removeEventListener('pointermove', move);
       handle.removeEventListener('pointerup', end);
       handle.removeEventListener('pointercancel', end);
+      handle.removeEventListener('lostpointercapture', end);
       row.classList.remove('dragging');
       const after = ids();
       if (after.join() !== before.join()) onDone(after);
@@ -100,5 +104,6 @@ export function makeSortable(listEl, onDone) {
     handle.addEventListener('pointermove', move);
     handle.addEventListener('pointerup', end);
     handle.addEventListener('pointercancel', end);
+    handle.addEventListener('lostpointercapture', end);
   });
 }

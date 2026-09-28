@@ -41,7 +41,9 @@ export async function updateEntry(entry) {
   const next = { ...entry, methodId: entry.type === 'expense' ? entry.methodId : null, updatedAt: Date.now() };
   const settings = stamped();
   await db.write({ put: { entries: [next] }, settings });
-  state.entries = state.entries.map(e => (e.id === next.id ? next : e));
+  state.entries = state.entries.some(e => e.id === next.id)
+    ? state.entries.map(e => (e.id === next.id ? next : e))
+    : [...state.entries, next];
   state.settings = settings;
   emit();
   return next;

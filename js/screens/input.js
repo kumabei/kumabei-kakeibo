@@ -131,7 +131,12 @@ function buildForm(f, { rerender, submitLabel, onSubmit, onMissing, kuma = null,
         class: 'cat add',
         onclick: async () => {
           const name = prompt('収入の分類の名前を入れてね')?.trim();
-          if (name) set({ categoryId: (await addCategory('income', name)).id });
+          if (!name) return;
+          try {
+            set({ categoryId: (await addCategory('income', name)).id });
+          } catch (e) {
+            showToast('保存できませんでした：' + e.message);
+          }
         },
       }, '＋ 分類を追加')
       : null);
@@ -147,7 +152,7 @@ function buildForm(f, { rerender, submitLabel, onSubmit, onMissing, kuma = null,
   const dates = el('div', { class: 'chips' },
     el('button', { class: 'chip' + (f.date === today ? ' on' : ''), onclick: () => set({ date: today }) }, '今日'),
     el('button', { class: 'chip' + (f.date === yesterday ? ' on' : ''), onclick: () => set({ date: yesterday }) }, '昨日'),
-    el('label', { class: 'chip' + (custom ? ' on' : '') }, custom ? formatDateLabel(f.date) : '日付を選ぶ',
+    el('label', { class: 'chip date-chip' + (custom ? ' on' : '') }, custom ? formatDateLabel(f.date) : '日付を選ぶ',
       el('input', { type: 'date', class: 'date-input', value: f.date, onchange: e => { if (e.target.value) set({ date: e.target.value }); } })),
     el('button', { class: 'chip' + (f.memo ? ' on' : ''), onclick: () => set({ memoOpen: !f.memoOpen }) }, '✏️メモ'));
 
