@@ -231,3 +231,74 @@ export function isFirstRecordToday(entries, entry) {
   return !entries.some(e => e.id !== entry.id && e.createdAt < entry.createdAt
     && toDateStr(new Date(e.createdAt)) === day);
 }
+
+// ---- backup ----
+
+export const APP_ID = 'kumabei-kakeibo';
+export const DAY_MS = 24 * 60 * 60 * 1000;
+export const BACKUP_INTERVAL_DAYS = 7;
+
+export function backupFileName(now) {
+  return `kakeibo-backup-${toDateStr(now).replaceAll('-', '')}.json`;
+}
+
+export function buildBackup(data, now) {
+  return {
+    app: APP_ID,
+    schemaVersion: SCHEMA_VERSION,
+    exportedAt: now.getTime(),
+    entries: data.entries,
+    categories: data.categories,
+    methods: data.methods,
+    settings: data.settings,
+  };
+}
+
+function isValidEntry(e) {
+  return e !== null && typeof e === 'object'
+    && typeof e.id === 'string'
+    && (e.type === 'expense' || e.type === 'income')
+    && Number.isInteger(e.amount) && e.amount > 0
+    && /^\d{4}-\d{2}-\d{2}$/.test(e.date)
+    && typeof e.categoryId === 'string';
+}
+
+// Checks a backup file. Nothing is changed unless this returns ok.
+export function parseBackup(text) {
+  let obj;
+  try {
+    obj = JSON.parse(text);
+  } catch {
+    return { ok: false, reason: 'ファイルが壊れています' };
+  }
+  if (!obj || obj.app !== APP_ID) return { ok: false, reason: 'くまべえ家計簿のバックアップではありません' };
+  const shapeOk = obj.schemaVersion === SCHEMA_VERSION
+    && ['entries', 'categories', 'methods'].every(k => Array.isArray(obj[k]))
+    && obj.settings !== null && typeof obj.settings === 'object'
+    && typeof obj.exportedAt === 'number';
+  if (!shapeOk) return { ok: false, reason: '形式がちがうバックアップです' };
+  if (!obj.entries.every(isValidEntry)) return { ok: false, reason: '記録の中身がおかしいバックアップです' };
+  return {
+    ok: true,
+    exportedAt: obj.exportedAt,
+    entryCount: obj.entries.length,
+    data: {
+      entries: obj.entries,
+      categories: obj.categories,
+      methods: obj.methods,
+      // The restored data equals the file, so it counts as "backed up, unchanged".
+      settings: { ...obj.settings, lastBackupAt: obj.exportedAt, lastChangedAt: obj.exportedAt, nudgeSnoozedOn: null },
+    },
+  };
+}
+
+// Spec 8: at least one entry, 7+ days since the last export (or the first entry),
+// something changed since that export, and not silenced with "later" today.
+export function shouldNudgeBackup(entries, settings, now) {
+  if (entries.length === 0) return false;
+  if (settings.nudgeSnoozedOn === todayStr(now)) return false;
+  const { lastBackupAt, lastChangedAt } = settings;
+  if (lastBackupAt != null && !(lastChangedAt > lastBackupAt)) return false;
+  const since = lastBackupAt ?? Math.min(...entries.map(e => e.createdAt));
+  return now.getTime() - since >= BACKUP_INTERVAL_DAYS * DAY_MS;
+}
