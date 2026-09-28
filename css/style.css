@@ -64,10 +64,10 @@ h1 { font-size: 20px; margin: 0; }
 
 /* ---- input screen ---- */
 .input-top { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
-.seg { display: flex; background: #fff; border-radius: 12px; padding: 3px; }
-.seg button { padding: 6px 16px; border-radius: 10px; font-weight: bold; color: var(--sub); }
+.seg { display: flex; background: #fff; border-radius: 12px; padding: 3px; flex: 1; max-width: 230px; }
+.seg button { flex: 1; padding: 6px 16px; border-radius: 10px; font-weight: bold; color: var(--sub); }
 .seg button.on { background: var(--accent); color: #fff; }
-.today-spend { font-size: 14px; color: var(--sub); }
+.today-spend { font-size: 14px; color: var(--sub); white-space: nowrap; margin-left: 10px; }
 .today-spend b { color: var(--text); }
 .amount-row { display: flex; align-items: center; justify-content: space-between; height: 60px; }
 .amount { font-size: 40px; font-weight: bold; }
