@@ -75,24 +75,27 @@ export function entryRow(entry, { categories, methods }, onTap, { showDate = fal
 
 // Drag-to-reorder for a vertical list. Rows carry data-id; dragging starts on .drag-handle.
 export function makeSortable(listEl, onDone) {
+  const ids = () => [...listEl.querySelectorAll('[data-id]')].map(r => r.dataset.id);
   listEl.addEventListener('pointerdown', ev => {
     const handle = ev.target.closest('.drag-handle');
     if (!handle) return;
     ev.preventDefault();
     const row = handle.closest('[data-id]');
+    const before = ids();
     row.classList.add('dragging');
     handle.setPointerCapture(ev.pointerId);
     const move = e => {
       const others = [...listEl.querySelectorAll('[data-id]')].filter(r => r !== row);
-      const before = others.find(r => e.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
-      listEl.insertBefore(row, before ?? null);
+      const target = others.find(r => e.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
+      listEl.insertBefore(row, target ?? null);
     };
     const end = () => {
       handle.removeEventListener('pointermove', move);
       handle.removeEventListener('pointerup', end);
       handle.removeEventListener('pointercancel', end);
       row.classList.remove('dragging');
-      onDone([...listEl.querySelectorAll('[data-id]')].map(r => r.dataset.id));
+      const after = ids();
+      if (after.join() !== before.join()) onDone(after);
     };
     handle.addEventListener('pointermove', move);
     handle.addEventListener('pointerup', end);

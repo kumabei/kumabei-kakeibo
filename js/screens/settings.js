@@ -3,16 +3,17 @@ import { state, saveItem, reorderItems, addCategory, addMethod } from '../state.
 import { allSorted, canHide, colorOf, formatDateTime } from '../logic.js';
 import { el, setChildren, makeSortable, showToast } from '../ui.js';
 import { exportBackup, importBackup } from '../backup.js';
-import { show } from '../nav.js';
+import { show, rerender } from '../nav.js';
 import { VERSION } from '../version.js';
 
 function askName(current = '') {
   return prompt('名前を入れてね', current)?.trim() || null;
 }
 
-// Runs a data change; a failed save is shown instead of being lost silently.
+// Runs a data change; a failed save is shown instead of being lost silently, and the
+// screen is redrawn from state so a visually-moved-but-unsaved row doesn't linger.
 async function guarded(change) {
-  try { await change(); } catch (e) { showToast('保存できませんでした：' + e.message); }
+  try { await change(); } catch (e) { showToast('保存できませんでした：' + e.message); rerender(); }
 }
 
 async function toggleHidden(storeName, item) {
