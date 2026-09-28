@@ -59,7 +59,8 @@ h1 { font-size: 20px; margin: 0; }
 .kuma img { width: 96px; height: 96px; object-fit: contain; }
 .kuma.pop img { animation: pop .35s ease-out; }
 @keyframes pop { 0% { transform: translateY(8px) scale(.9); } 60% { transform: translateY(-4px) scale(1.03); } 100% { transform: none; } }
-.bubble { background: #fff; border: 2px solid var(--pink); border-radius: 14px; padding: 6px 10px; font-size: 15px; font-weight: bold; margin-bottom: 4px; }
+.bubble { background: #fff; border: 2px solid var(--pink); border-radius: 14px; padding: 6px 10px; font-size: 15px; font-weight: bold; margin-bottom: 4px;
+  font-family: "Zen Maru Gothic", -apple-system, "Hiragino Sans", sans-serif; }
 .kuma-small img { width: 72px; height: 72px; }
 
 /* ---- input screen ---- */

@@ -50,6 +50,16 @@ export function imageSrc(key) {
   return `img/kuma/${key}.png`;
 }
 
+// Unique characters of everything Kumabee says, in first-seen order. Used to build the Google
+// Fonts `text=` subset so only the characters actually needed are downloaded.
+export function lineChars() {
+  const seen = new Set();
+  for (const line of Object.values(LINES)) {
+    for (const ch of line) seen.add(ch);
+  }
+  return [...seen].join('');
+}
+
 // Draws Kumabee into `el`. A transient speech bubble disappears after 3 seconds.
 export function renderKuma(el, { image, line = null, transient = false }) {
   const img = document.createElement('img');

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import { SCENES, CATEGORY_IMAGES, recordReaction, homeScene, imageSrc } from '../js/kuma.js';
+import { SCENES, CATEGORY_IMAGES, recordReaction, homeScene, imageSrc, lineChars } from '../js/kuma.js';
 import { LINES } from '../js/lines.js';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -50,4 +50,12 @@ test('home shows the month-end scene on the 1st and the last day', () => {
 
 test('imageSrc', () => {
   assert.equal(imageSrc('k01'), 'img/kuma/k01.png');
+});
+
+test('lineChars includes every character of every line, no duplicates', () => {
+  const chars = lineChars();
+  assert.equal(new Set(chars).size, chars.length);
+  for (const line of Object.values(LINES)) {
+    for (const ch of line) assert.ok(chars.includes(ch), `missing: ${ch}`);
+  }
 });
