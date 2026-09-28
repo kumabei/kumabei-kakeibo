@@ -19,4 +19,6 @@ try {
   throw e;
 }
 
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') rerender(); });
+
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');

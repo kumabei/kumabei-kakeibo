@@ -15,6 +15,7 @@ const KEY_LABELS = { back: '⌫', clear: 'C' };
 const GUARD_MS = 1000;
 
 let form = null; // the new-entry form; kept across re-renders
+let formDay = null; // the day form.date was defaulted to (blankForm), so an overnight resume can catch up
 let rootEl = null;
 let busyUntil = 0; // taps on the submit button are ignored until then (double-tap guard)
 let bumpNext = false; // play the small bump on the next drawn submit button
@@ -22,7 +23,8 @@ let firstShow = true;
 const kumaEl = el('div', { class: 'kuma kuma-input' });
 
 function blankForm(type, methodId) {
-  return { type, amountStr: '', categoryId: null, methodId, date: todayStr(), memo: '', memoOpen: false };
+  formDay = todayStr();
+  return { type, amountStr: '', categoryId: null, methodId, date: formDay, memo: '', memoOpen: false };
 }
 
 function setKuma(scene) {
@@ -34,6 +36,11 @@ export function render(root, { entering = false } = {}) {
   form ??= blankForm('expense', pickDefaultMethod(state.methods, state.settings.lastMethodId));
   if (!visibleSorted(state.methods).some(m => m.id === form.methodId)) {
     form.methodId = pickDefaultMethod(state.methods, state.settings.lastMethodId);
+  }
+  const today = todayStr();
+  if (today !== formDay && form.date === formDay) {
+    form.date = today;
+    formDay = today;
   }
   if (entering) {
     setKuma(firstShow ? SCENES.welcome : SCENES.peek);
