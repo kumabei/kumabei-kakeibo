@@ -1,0 +1,52 @@
+/* ---- base (colors carried over from the test page) ---- */
+:root {
+  --bg: #fff7f9; --card: #ffffff; --pink: #ffd6e0; --accent: #e8718d; --text: #4a3a3a; --sub: #8a7a7a;
+  --line: #f0dde2; --minus: #d9534f; --plus: #3c9a64; --tabbar-h: 58px;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, "Hiragino Sans", sans-serif; font-size: 17px; }
+body { padding: env(safe-area-inset-top) 12px calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 8px); }
+button { font: inherit; color: inherit; border: none; background: none; padding: 0; touch-action: manipulation; cursor: pointer; }
+[hidden] { display: none !important; }
+h1 { font-size: 20px; margin: 0; }
+.card { background: var(--card); border-radius: 16px; padding: 14px; margin: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+.card-title { font-weight: bold; margin-bottom: 6px; }
+.row { display: flex; justify-content: space-between; padding: 4px 0; }
+.row span:last-child { font-weight: bold; }
+.row.minus span:last-child { color: var(--minus); }
+.muted { color: var(--sub); font-size: 15px; }
+.link { color: var(--accent); font-weight: bold; padding: 8px 4px; }
+.link.danger { color: var(--minus); }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 6px; flex: none; }
+
+/* ---- tab bar ---- */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; background: #fff; border-top: 1px solid var(--line);
+  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 22px; color: var(--sub); }
+.tab span { font-size: 12px; }
+.tab.active { color: var(--accent); font-weight: bold; }
+
+/* ---- month switcher ---- */
+.month-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 8px 0; }
+.nav-btn { font-size: 28px; width: 44px; height: 44px; border-radius: 22px; background: var(--pink); }
+.month-label { font-size: 19px; font-weight: bold; min-width: 8em; text-align: center; }
+
+/* ---- toast (top of the screen, so it never covers the keypad) ---- */
+.toast { position: fixed; left: 12px; right: 12px; top: calc(env(safe-area-inset-top) + 8px); z-index: 30; display: flex; align-items: center; gap: 10px;
+  background: #fff; border-radius: 16px; padding: 10px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+.toast img { width: 40px; height: 40px; object-fit: contain; }
+.toast-text { flex: 1; font-weight: bold; }
+.toast-action { background: var(--accent); color: #fff; border-radius: 12px; padding: 10px 14px; font-weight: bold; }
+
+/* ---- editor sheet ---- */
+.sheet { position: fixed; inset: 0; z-index: 20; background: var(--bg); overflow-y: auto;
+  padding: env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 12px); }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; }
+
+/* ---- Kumabee ---- */
+.kuma { display: flex; flex-direction: column; align-items: center; }
+.kuma img { width: 96px; height: 96px; object-fit: contain; }
+.kuma.pop img { animation: pop .35s ease-out; }
+@keyframes pop { 0% { transform: translateY(8px) scale(.9); } 60% { transform: translateY(-4px) scale(1.03); } 100% { transform: none; } }
+.bubble { background: #fff; border: 2px solid var(--pink); border-radius: 14px; padding: 6px 10px; font-size: 15px; font-weight: bold; margin-bottom: 4px; }
+.kuma-small img { width: 72px; height: 72px; }
