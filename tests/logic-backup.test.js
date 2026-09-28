@@ -43,7 +43,8 @@ test('broken or foreign files are rejected with a reason', () => {
 
 test('the old test page backup is a different format', () => {
   const old = { app: 'kumabei-kakeibo', version: 'test-1', exportedAt: '2026-09-27T12:00:00Z', records: [] };
-  assert.deepEqual(parseBackup(JSON.stringify(old)), { ok: false, reason: '形式がちがうバックアップです' });
+  assert.deepEqual(parseBackup(JSON.stringify(old)),
+    { ok: false, reason: '検証ページのバックアップなので戻せません。新しい日付のファイルを選んでね' });
 });
 
 test('missing lists or bad entries are rejected', () => {

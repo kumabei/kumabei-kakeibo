@@ -289,6 +289,9 @@ export function parseBackup(text) {
     return { ok: false, reason: 'ファイルが壊れています' };
   }
   if (!obj || obj.app !== APP_ID) return { ok: false, reason: 'くまべえ家計簿のバックアップではありません' };
+  if (Array.isArray(obj.records) && obj.schemaVersion === undefined) {
+    return { ok: false, reason: '検証ページのバックアップなので戻せません。新しい日付のファイルを選んでね' };
+  }
   const shapeOk = obj.schemaVersion === SCHEMA_VERSION
     && ['entries', 'categories', 'methods'].every(k => Array.isArray(obj[k]))
     && obj.settings !== null && typeof obj.settings === 'object'
