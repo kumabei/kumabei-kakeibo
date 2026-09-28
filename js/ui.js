@@ -16,6 +16,11 @@ export function el(tag, props = {}, ...children) {
   return node;
 }
 
+// replaceChildren that, like el(), flattens arrays and skips null/false children.
+export function setChildren(node, ...children) {
+  node.replaceChildren(...children.flat().filter(c => c != null && c !== false));
+}
+
 let toastTimer = null;
 
 export function showToast(text, { actionLabel = null, onAction = null, image = null, ms = 5000 } = {}) {

@@ -2,7 +2,7 @@
 import { state, updateSettings } from '../state.js';
 import { todayStr, monthOf, monthTotals, methodBreakdown, formatYen, shouldNudgeBackup } from '../logic.js';
 import { SCENES, homeScene, renderKuma, imageSrc } from '../kuma.js';
-import { el, monthNav } from '../ui.js';
+import { el, monthNav, setChildren } from '../ui.js';
 import { exportBackup } from '../backup.js';
 import { show } from '../nav.js';
 
@@ -27,7 +27,7 @@ export function render(root, { entering = false } = {}) {
   const kuma = el('div', { class: 'kuma kuma-home' });
   renderKuma(kuma, homeScene(todayStr(now)));
 
-  root.replaceChildren(
+  setChildren(root,
     el('div', { class: 'home-head' },
       el('h1', {}, 'くまべえ家計簿'),
       el('button', { class: 'gear', 'aria-label': '設定', onclick: () => show('settings') }, '⚙️')),
