@@ -53,6 +53,25 @@ test('missing lists or bad entries are rejected', () => {
   assert.deepEqual(parseBackup(JSON.stringify(bad)), { ok: false, reason: '記録の中身がおかしいバックアップです' });
 });
 
+test('a category missing id is rejected', () => {
+  const cats = initialCategories();
+  cats[0] = { ...cats[0], id: undefined };
+  const bad = buildBackup({ ...data(), categories: cats }, NOW);
+  assert.deepEqual(parseBackup(JSON.stringify(bad)), { ok: false, reason: '形式がちがうバックアップです' });
+});
+
+test('a method with a non-string name is rejected', () => {
+  const methods = initialMethods();
+  methods[0] = { ...methods[0], name: 123 };
+  const bad = buildBackup({ ...data(), methods }, NOW);
+  assert.deepEqual(parseBackup(JSON.stringify(bad)), { ok: false, reason: '形式がちがうバックアップです' });
+});
+
+test('an entry without a numeric createdAt is rejected', () => {
+  const bad = buildBackup({ ...data(), entries: [entry(3, { createdAt: '3' })] }, NOW);
+  assert.deepEqual(parseBackup(JSON.stringify(bad)), { ok: false, reason: '記録の中身がおかしいバックアップです' });
+});
+
 const settings = patch => ({ ...initialSettings(), ...patch });
 
 test('no nudge without entries', () => {

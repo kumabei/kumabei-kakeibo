@@ -15,7 +15,10 @@ function open() {
       for (const name of LISTS) req.result.createObjectStore(name, { keyPath: 'id' });
       req.result.createObjectStore('settings', { keyPath: 'key' });
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      req.result.onclose = () => { dbPromise = null; };
+      resolve(req.result);
+    };
     req.onerror = () => { dbPromise = null; reject(req.error); };
   });
   return dbPromise;
@@ -27,10 +30,17 @@ async function run(names, mode, fn) {
   return new Promise((resolve, reject) => {
     const t = db.transaction(names, mode);
     const stores = Object.fromEntries(names.map(n => [n, t.objectStore(n)]));
-    const out = fn(stores);
-    t.oncomplete = () => resolve(out);
     t.onerror = () => reject(t.error);
     t.onabort = () => reject(t.error);
+    let out;
+    try {
+      out = fn(stores);
+    } catch (e) {
+      try { t.abort(); } catch {}
+      reject(e);
+      return;
+    }
+    t.oncomplete = () => resolve(out);
   });
 }
 
@@ -56,7 +66,7 @@ export function write({ put = {}, del = {}, settings = null }) {
   return run(names, 'readwrite', s => {
     for (const [name, items] of Object.entries(put)) items.forEach(x => s[name].put(x));
     for (const [name, ids] of Object.entries(del)) ids.forEach(id => s[name].delete(id));
-    if (settings) s.settings.put({ key: 'main', ...settings });
+    if (settings) s.settings.put({ ...settings, key: 'main' });
   });
 }
 
@@ -67,6 +77,6 @@ export function replaceAll(data) {
       data[name].forEach(x => s[name].put(x));
     }
     s.settings.clear();
-    s.settings.put({ key: 'main', ...data.settings });
+    s.settings.put({ ...data.settings, key: 'main' });
   });
 }

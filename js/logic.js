@@ -260,7 +260,24 @@ function isValidEntry(e) {
     && (e.type === 'expense' || e.type === 'income')
     && Number.isInteger(e.amount) && e.amount > 0
     && /^\d{4}-\d{2}-\d{2}$/.test(e.date)
-    && typeof e.categoryId === 'string';
+    && typeof e.categoryId === 'string'
+    && typeof e.createdAt === 'number'
+    && (e.memo === undefined || typeof e.memo === 'string');
+}
+
+function isValidCategory(c) {
+  return c !== null && typeof c === 'object'
+    && typeof c.id === 'string'
+    && (c.type === 'expense' || c.type === 'income')
+    && typeof c.name === 'string'
+    && typeof c.order === 'number';
+}
+
+function isValidMethod(m) {
+  return m !== null && typeof m === 'object'
+    && typeof m.id === 'string'
+    && typeof m.name === 'string'
+    && typeof m.order === 'number';
 }
 
 // Checks a backup file. Nothing is changed unless this returns ok.
@@ -277,6 +294,9 @@ export function parseBackup(text) {
     && obj.settings !== null && typeof obj.settings === 'object'
     && typeof obj.exportedAt === 'number';
   if (!shapeOk) return { ok: false, reason: '形式がちがうバックアップです' };
+  if (!obj.categories.every(isValidCategory) || !obj.methods.every(isValidMethod)) {
+    return { ok: false, reason: '形式がちがうバックアップです' };
+  }
   if (!obj.entries.every(isValidEntry)) return { ok: false, reason: '記録の中身がおかしいバックアップです' };
   return {
     ok: true,
