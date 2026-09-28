@@ -52,6 +52,35 @@ export function closeSheet() {
   sheet.replaceChildren();
 }
 
+// In-app text dialog. focus() runs synchronously inside the tap handler, so iOS shows the
+// keyboard at once (prompt() on iOS only shows the keyboard after the field is tapped again).
+// Call askText() synchronously as the first thing in the click handler, before any await.
+export function askText(title, initial = '') {
+  return new Promise(resolve => {
+    let done = false;
+    const finish = value => {
+      if (done) return;
+      done = true;
+      backdrop.remove();
+      resolve(value);
+    };
+    const input = el('input', {
+      type: 'text', class: 'dialog-input', value: initial, enterkeyhint: 'done',
+      onkeydown: e => { if (e.key === 'Enter') { e.preventDefault(); finish(input.value.trim() || null); } },
+    });
+    const backdrop = el('div', { class: 'dialog-backdrop' },
+      el('div', { class: 'dialog' },
+        el('div', { class: 'dialog-title' }, title),
+        input,
+        el('div', { class: 'dialog-actions' },
+          el('button', { class: 'dialog-btn', onclick: () => finish(null) }, 'キャンセル'),
+          el('button', { class: 'dialog-btn primary', onclick: () => finish(input.value.trim() || null) }, 'OK'))));
+    document.body.append(backdrop);
+    input.focus();
+    input.select();
+  });
+}
+
 export function monthNav(ym, onChange) {
   return el('div', { class: 'month-nav' },
     el('button', { class: 'nav-btn', 'aria-label': '前の月', onclick: () => onChange(addMonths(ym, -1)) }, '‹'),

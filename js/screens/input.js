@@ -6,7 +6,7 @@ import {
 } from '../logic.js';
 import { SCENES, recordReaction, renderKuma } from '../kuma.js';
 import { LINES } from '../lines.js';
-import { el, showToast, openSheet, closeSheet } from '../ui.js';
+import { el, showToast, openSheet, closeSheet, askText } from '../ui.js';
 import { show } from '../nav.js';
 
 // Keypad, 4 per row; the submit button fills the last row next to 0.
@@ -130,7 +130,7 @@ function buildForm(f, { rerender, submitLabel, onSubmit, onMissing, kuma = null,
       ? el('button', {
         class: 'cat add',
         onclick: async () => {
-          const name = prompt('収入の分類の名前を入れてね')?.trim();
+          const name = await askText('収入の分類の名前を入れてね');
           if (!name) return;
           try {
             set({ categoryId: (await addCategory('income', name)).id });

@@ -1,15 +1,11 @@
 // Settings: categories and payment methods (add, rename, reorder, hide) and the backup.
 import { state, saveItem, reorderItems, addCategory, addMethod } from '../state.js';
 import { allSorted, canHide, colorOf, formatDateTime } from '../logic.js';
-import { el, setChildren, makeSortable, showToast } from '../ui.js';
+import { el, setChildren, makeSortable, showToast, askText } from '../ui.js';
 import { exportBackup, importBackup } from '../backup.js';
 import { show, rerender } from '../nav.js';
 import { VERSION } from '../version.js';
 import { SCENES, renderKuma } from '../kuma.js';
-
-function askName(current = '') {
-  return prompt('名前を入れてね', current)?.trim() || null;
-}
 
 // Runs a data change; a failed save is shown instead of being lost silently, and the
 // screen is redrawn from state so a visually-moved-but-unsaved row doesn't linger.
@@ -34,14 +30,14 @@ function section(title, storeName, items, add) {
       el('span', { class: 'item-name' }, item.name),
       el('button', {
         class: 'small',
-        onclick: () => guarded(async () => { const name = askName(item.name); if (name) await saveItem(storeName, { ...item, name }); }),
+        onclick: () => guarded(async () => { const name = await askText('名前を入れてね', item.name); if (name) await saveItem(storeName, { ...item, name }); }),
       }, '名前'),
       el('button', { class: 'small', onclick: () => toggleHidden(storeName, item) }, item.hidden ? '表示する' : 'かくす'))));
   makeSortable(list, ids => guarded(() => reorderItems(storeName, ids)));
   return el('section', { class: 'card' },
     el('div', { class: 'card-title' }, title),
     list,
-    el('button', { class: 'add', onclick: () => guarded(async () => { const name = askName(); if (name) await add(name); }) }, '＋ 追加'));
+    el('button', { class: 'add', onclick: () => guarded(async () => { const name = await askText('名前を入れてね'); if (name) await add(name); }) }, '＋ 追加'));
 }
 
 function backupSection() {
