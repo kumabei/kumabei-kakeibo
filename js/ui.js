@@ -72,3 +72,30 @@ export function entryRow(entry, { categories, methods }, onTap, { showDate = fal
       el('span', { class: 'entry-sub' }, sub)),
     el('span', { class: 'entry-amount' + (income ? ' income' : '') }, (income ? '+' : '') + formatYen(entry.amount)));
 }
+
+// Drag-to-reorder for a vertical list. Rows carry data-id; dragging starts on .drag-handle.
+export function makeSortable(listEl, onDone) {
+  listEl.addEventListener('pointerdown', ev => {
+    const handle = ev.target.closest('.drag-handle');
+    if (!handle) return;
+    ev.preventDefault();
+    const row = handle.closest('[data-id]');
+    row.classList.add('dragging');
+    handle.setPointerCapture(ev.pointerId);
+    const move = e => {
+      const others = [...listEl.querySelectorAll('[data-id]')].filter(r => r !== row);
+      const before = others.find(r => e.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
+      listEl.insertBefore(row, before ?? null);
+    };
+    const end = () => {
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', end);
+      handle.removeEventListener('pointercancel', end);
+      row.classList.remove('dragging');
+      onDone([...listEl.querySelectorAll('[data-id]')].map(r => r.dataset.id));
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
+  });
+}

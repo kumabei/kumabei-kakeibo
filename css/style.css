@@ -112,3 +112,15 @@ h1 { font-size: 20px; margin: 0; }
 .entry-sub { font-size: 13px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .entry-amount { font-weight: bold; }
 .entry-amount.income { color: var(--plus); }
+
+/* ---- settings ---- */
+.settings-head { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.item-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f6e8ec; background: #fff; }
+.item-row.dragging { opacity: .6; }
+.item-row.hidden-item .item-name { color: #c0b0b4; text-decoration: line-through; }
+.drag-handle { font-size: 22px; color: var(--sub); padding: 0 6px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.item-name { flex: 1; }
+.small { background: #f6eef0; border-radius: 10px; padding: 6px 10px; font-size: 14px; }
+.add { margin-top: 8px; color: var(--accent); font-weight: bold; padding: 8px 0; }
+.wide { display: block; width: 100%; background: var(--pink); border-radius: 14px; padding: 14px; margin-top: 8px; font-weight: bold; font-size: 18px; }
+.version { text-align: center; color: var(--sub); font-size: 13px; margin: 16px 0; }
