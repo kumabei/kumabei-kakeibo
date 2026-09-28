@@ -1,5 +1,5 @@
 // Small DOM helpers shared by the screens.
-import { addMonths, formatMonthLabel } from './logic.js';
+import { addMonths, formatMonthLabel, colorOf, formatYen, formatDateShort, memoHead } from './logic.js';
 import { imageSrc } from './kuma.js';
 
 // el('button', { class: 'x', onclick: fn }, 'text', child). Strings become text nodes (never HTML).
@@ -57,4 +57,18 @@ export function monthNav(ym, onChange) {
     el('button', { class: 'nav-btn', 'aria-label': '前の月', onclick: () => onChange(addMonths(ym, -1)) }, '‹'),
     el('span', { class: 'month-label' }, formatMonthLabel(ym)),
     el('button', { class: 'nav-btn', 'aria-label': '次の月', onclick: () => onChange(addMonths(ym, 1)) }, '›'));
+}
+
+// One entry in a list (calendar and history). The dot has the category's color.
+export function entryRow(entry, { categories, methods }, onTap, { showDate = false } = {}) {
+  const cat = categories.find(c => c.id === entry.categoryId);
+  const method = methods.find(m => m.id === entry.methodId);
+  const income = entry.type === 'income';
+  const sub = (income ? '収入' : method?.name ?? '') + (entry.memo ? '・' + memoHead(entry.memo) : '');
+  return el('button', { class: 'entry-row', onclick: onTap },
+    el('span', { class: 'dot', style: `background:${colorOf(cat).strong}` }),
+    el('span', { class: 'entry-main' },
+      el('span', { class: 'entry-cat' }, (showDate ? formatDateShort(entry.date) + ' ' : '') + (cat?.name ?? '（分類なし）')),
+      el('span', { class: 'entry-sub' }, sub)),
+    el('span', { class: 'entry-amount' + (income ? ' income' : '') }, (income ? '+' : '') + formatYen(entry.amount)));
 }
