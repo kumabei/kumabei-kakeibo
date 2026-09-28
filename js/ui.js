@@ -74,36 +74,76 @@ export function entryRow(entry, { categories, methods }, onTap, { showDate = fal
 }
 
 // Drag-to-reorder for a vertical list. Rows carry data-id; dragging starts on .drag-handle.
+// The DOM order is never changed while dragging (iOS loses the pointer if a row is moved
+// under the finger): rows only get a CSS transform, and the real reorder happens once at the end.
 export function makeSortable(listEl, onDone) {
   const ids = () => [...listEl.querySelectorAll('[data-id]')].map(r => r.dataset.id);
+
+  // Stop the page from scrolling while a drag is in progress (iOS still sends touch events
+  // alongside pointer events, and a page scroll would fight with the drag).
+  listEl.addEventListener('touchmove', ev => {
+    if (ev.target.closest('.drag-handle')) ev.preventDefault();
+  }, { passive: false });
+
   listEl.addEventListener('pointerdown', ev => {
     const handle = ev.target.closest('.drag-handle');
     if (!handle) return;
     ev.preventDefault();
     const row = handle.closest('[data-id]');
+    const startY = ev.clientY;
     const before = ids();
-    row.classList.add('dragging');
-    try { handle.setPointerCapture(ev.pointerId); } catch {}
-    const move = e => {
-      const others = [...listEl.querySelectorAll('[data-id]')].filter(r => r !== row);
-      const target = others.find(r => e.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
-      listEl.insertBefore(row, target ?? null);
-    };
+    const rows = [...listEl.querySelectorAll('[data-id]')];
+    const startIndex = rows.indexOf(row);
+    const rects = rows.map(r => r.getBoundingClientRect());
+    const rowHeight = rects[startIndex].height;
+    let targetIndex = startIndex;
     let ended = false;
-    const end = () => {
+
+    row.classList.add('dragging');
+    listEl.classList.add('sorting');
+
+    const move = e => {
+      const dy = e.clientY - startY;
+      row.style.transform = `translateY(${dy}px)`;
+      const center = rects[startIndex].top + rowHeight / 2 + dy;
+      // The target index is whichever row's start-center is closest to the dragged row's current center.
+      targetIndex = rects.reduce((best, r, i) => {
+        const rowCenter = r.top + r.height / 2;
+        const bestCenter = rects[best].top + rects[best].height / 2;
+        return Math.abs(center - rowCenter) < Math.abs(center - bestCenter) ? i : best;
+      }, 0);
+
+      rows.forEach((r, i) => {
+        if (i === startIndex) return;
+        if (targetIndex === startIndex) { r.style.transform = ''; return; }
+        const inRange = targetIndex > startIndex
+          ? i > startIndex && i <= targetIndex
+          : i >= targetIndex && i < startIndex;
+        r.style.transform = inRange ? `translateY(${targetIndex > startIndex ? -rowHeight : rowHeight}px)` : '';
+      });
+    };
+
+    const end = cancelled => {
       if (ended) return;
       ended = true;
-      handle.removeEventListener('pointermove', move);
-      handle.removeEventListener('pointerup', end);
-      handle.removeEventListener('pointercancel', end);
-      handle.removeEventListener('lostpointercapture', end);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
       row.classList.remove('dragging');
-      const after = ids();
+      listEl.classList.remove('sorting');
+      rows.forEach(r => { r.style.transform = ''; });
+      if (cancelled) return;
+      if (targetIndex === startIndex) return;
+      const reordered = rows.filter((_, i) => i !== startIndex);
+      reordered.splice(targetIndex, 0, row);
+      const after = reordered.map(r => r.dataset.id);
       if (after.join() !== before.join()) onDone(after);
     };
-    handle.addEventListener('pointermove', move);
-    handle.addEventListener('pointerup', end);
-    handle.addEventListener('pointercancel', end);
-    handle.addEventListener('lostpointercapture', end);
+    const up = () => end(false);
+    const cancel = () => end(true);
+
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
   });
 }
