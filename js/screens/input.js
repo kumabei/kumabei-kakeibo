@@ -148,15 +148,25 @@ function buildForm(f, { rerender, submitLabel, onSubmit, onMissing, kuma = null,
 
   const today = todayStr();
   const yesterday = addDays(today, -1);
-  const custom = f.date !== today && f.date !== yesterday;
-  const dates = el('div', { class: 'chips' },
-    el('button', { class: 'chip' + (f.date === today ? ' on' : ''), onclick: () => set({ date: today }) }, '今日'),
-    el('button', { class: 'chip' + (f.date === yesterday ? ' on' : ''), onclick: () => set({ date: yesterday }) }, '昨日'),
-    el('label', { class: 'chip date-chip' + (custom ? ' on' : '') }, custom ? formatDateLabel(f.date) : '日付を選ぶ',
-      el('input', {
-        type: 'date', class: 'date-input', value: f.date,
-        onchange: e => set({ date: e.target.value ? e.target.value : todayStr() }),
-      })),
+  const todayChip = el('button', { class: 'chip', onclick: () => set({ date: today }) }, '今日');
+  const yesterdayChip = el('button', { class: 'chip', onclick: () => set({ date: yesterday }) }, '昨日');
+  const pickLabel = document.createTextNode('');
+  // A date change must not re-render: iOS keeps its picker open and sends later picks and
+  // ［リセット］ (an empty value) to the same <input>, and drops them once it is replaced.
+  const pickChip = el('label', { class: 'chip date-chip' }, pickLabel,
+    el('input', {
+      type: 'date', class: 'date-input', value: f.date,
+      onchange: e => { f.date = e.target.value || todayStr(); paintDates(); },
+    }));
+  const paintDates = () => {
+    const custom = f.date !== today && f.date !== yesterday;
+    todayChip.classList.toggle('on', f.date === today);
+    yesterdayChip.classList.toggle('on', f.date === yesterday);
+    pickChip.classList.toggle('on', custom);
+    pickLabel.data = custom ? formatDateLabel(f.date) : '日付を選ぶ';
+  };
+  paintDates();
+  const dates = el('div', { class: 'chips' }, todayChip, yesterdayChip, pickChip,
     el('button', { class: 'chip' + (f.memo ? ' on' : ''), onclick: () => set({ memoOpen: !f.memoOpen }) }, '✏️メモ'));
 
   const memo = f.memoOpen
