@@ -115,7 +115,8 @@ export function entryRow(entry, { categories, methods }, onTap, { showDate = fal
   return el('button', { class: 'entry-row', onclick: onTap },
     el('span', { class: 'dot', style: `background:${colorOf(cat).strong}` }),
     el('span', { class: 'entry-main' },
-      el('span', { class: 'entry-cat' }, (showDate ? formatDateShort(entry.date) + ' ' : '') + (cat?.name ?? '（分類なし）')),
+      el('span', { class: 'entry-cat' }, (showDate ? formatDateShort(entry.date) + ' ' : '') + (cat?.name ?? '（分類なし）')
+        + (entry.fixedId ? ' 🔁' : '')), // fixed costs spec 4-3
       el('span', { class: 'entry-sub' }, sub)),
     el('span', { class: 'entry-amount' + (income ? ' income' : '') }, (income ? '+' : '') + formatYen(entry.amount)));
 }

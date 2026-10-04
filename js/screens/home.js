@@ -5,6 +5,7 @@ import { SCENES, homeScene, renderKuma, imageSrc } from '../kuma.js';
 import { el, monthNav, setChildren } from '../ui.js';
 import { exportBackup } from '../backup.js';
 import { show } from '../nav.js';
+import { fixedSummary } from '../fixed.js';
 
 let ym = null;
 
@@ -17,6 +18,19 @@ function nudgeBanner() {
     el('div', { class: 'nudge-actions' },
       el('button', { class: 'primary', onclick: () => exportBackup() }, '今する'),
       el('button', { onclick: () => updateSettings({ nudgeSnoozedOn: todayStr() }) }, 'あとで')));
+}
+
+// Fixed costs spec 6-2: the month's fixed costs under the breakdown. Nothing when there are none.
+function fixedCard(ym) {
+  const s = fixedSummary(state.fixed, state.entries, ym);
+  if (!s) return null;
+  return el('div', { class: 'card' },
+    el('div', { class: 'card-title' }, `${Number(ym.slice(5))}月の固定費`),
+    s.rows.map(r => el('div', { class: 'row' },
+      el('span', {}, r.name),
+      el('span', {}, formatYen(r.amount),
+        r.done ? el('span', { class: 'fixed-done' }, ' ✓') : el('span', { class: 'fixed-plan' }, ` ${r.day}日の予定`)))),
+    el('div', { class: 'fixed-foot' }, `記録済み ${formatYen(s.recorded)} ／ 全部で ${formatYen(s.total)}`));
 }
 
 export function render(root, { entering = false } = {}) {
@@ -42,5 +56,6 @@ export function render(root, { entering = false } = {}) {
       breakdown.length
         ? breakdown.map(b => row(b.name, formatYen(b.amount)))
         : el('div', { class: 'muted' }, 'まだ支出はありません')),
+    fixedCard(ym),
     kuma);
 }

@@ -151,3 +151,6 @@ h1 { font-size: 20px; margin: 0; }
 .fixed-note { margin-top: 4px; font-size: 13px; }
 .fixed-item .item-name { font-size: 15px; }
 .fixed-item.hidden-item .item-name { text-decoration: none; }
+.fixed-done { color: var(--plus); }
+.fixed-plan { font-weight: normal; color: var(--sub); font-size: 14px; }
+.fixed-foot { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; font-size: 14px; color: var(--sub); text-align: right; }
