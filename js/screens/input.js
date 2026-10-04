@@ -100,6 +100,7 @@ async function submitNew() {
     busyUntil = 0;
     return;
   }
+  busyUntil = Date.now() + GUARD_MS; // the question took time: guard the save itself
   let entry;
   try {
     entry = choice === 'fixed' ? await addFixedEntry(draft, check.fixed.id) : await addEntry(draft);
