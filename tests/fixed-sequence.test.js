@@ -137,6 +137,14 @@ test('8: export a backup → change things → restore: the entries and doneThro
   const r = parseBackup(file);
   assert.equal(r.ok, true);
   assert.deepEqual({ entries: r.data.entries, fixed: r.data.fixed }, saved);
+  db.data.entries = r.data.entries;
+  db.data.fixed = r.data.fixed;
+  assert.equal(loan(db).doneThrough, '2026-10');
+  assert.equal(db.data.entries.length, 1);
+  assert.equal(db.data.entries[0].fixedMonth, '2026-10');
+  assert.deepEqual(doneRows(db, '2026-10'), [true]);
+  assert.deepEqual(await catchUp(db, '2026-10-27'), []);
+  assert.deepEqual((await catchUp(db, '2026-11-27')).map(r => r.ym), ['2026-11']);
 });
 
 test('9: catching up twice at the same time records once', async () => {
