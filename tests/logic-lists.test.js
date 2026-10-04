@@ -5,27 +5,27 @@ import {
   visibleSorted, allSorted, listWithCurrent, pickDefaultMethod, canHide,
 } from '../js/logic.js';
 
-const EXPECTED = {
-  '食費': 'food', '外食': 'outing', 'おやつ': 'food', '日用品': 'living', '服': 'family',
-  '子供': 'family', '教育費': 'family', '交際費': 'outing', '車': 'move', 'ガソリン': 'move',
-  '交通費': 'move', 'イベント・レジャー': 'outing', '医療費': 'medical', '通信費': 'monthly',
-  '光熱費': 'monthly', '住居費': 'monthly', '家具・家電': 'living', 'お小遣い': 'family',
-  '固定費': 'monthly', '雑費': 'other',
-};
+const EXPECTED = [
+  ['食費', 'food'], ['外食', 'outing'], ['おやつ', 'food'], ['日用品', 'living'], ['服', 'family'],
+  ['子供', 'family'], ['教育費', 'family'], ['交際費', 'outing'], ['車', 'move'], ['ガソリン', 'move'],
+  ['交通費', 'move'], ['イベント・レジャー', 'outing'], ['医療費', 'medical'], ['通信費', 'monthly'],
+  ['光熱費', 'monthly'], ['住居費', 'monthly'], ['家具・家電', 'living'], ['お小遣い', 'family'],
+  ['保険', 'monthly'], ['固定費', 'monthly'], ['雑費', 'other'],
+];
 
-test('initial expense categories follow the spec order and colors', () => {
-  const cats = initialCategories();
-  assert.deepEqual(cats.map(c => c.name), Object.keys(EXPECTED));
+test('initial expense categories: the spec order and colors, 保険 in place of the hidden 固定費', () => {
+  const cats = allSorted(initialCategories());
+  assert.deepEqual(cats.map(c => [c.name, c.color]), EXPECTED);
   for (const c of cats) {
     assert.equal(c.type, 'expense');
-    assert.equal(c.hidden, false);
-    assert.equal(c.color, EXPECTED[c.name]);
     assert.ok(COLORS[c.color], c.color);
   }
-  assert.deepEqual(cats.map(c => c.order), [...Array(20).keys()]);
-  assert.equal(cats[0].id, 'e01');
-  assert.equal(cats[19].id, 'e20');
-  assert.equal(new Set(cats.map(c => c.id)).size, 20);
+  assert.deepEqual(cats.map(c => c.order), [...Array(21).keys()]);
+  assert.deepEqual(cats.filter(c => c.hidden).map(c => c.id), ['e19']);
+  assert.equal(cats.find(c => c.name === '食費').id, 'e01');
+  assert.equal(cats.find(c => c.name === '保険').id, 'e21');
+  assert.equal(cats.find(c => c.name === '雑費').id, 'e20');
+  assert.equal(new Set(cats.map(c => c.id)).size, 21);
 });
 
 test('initial methods and settings', () => {

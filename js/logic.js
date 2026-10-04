@@ -107,7 +107,7 @@ export function amountValue(amountStr) {
 
 // ---- initial data, colors and ordering ----
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 // Pastel colors per group of categories (spec 5). bg = button, strong = selected button and dots.
 export const COLORS = {
@@ -131,8 +131,33 @@ const EXPENSE_DEFAULTS = [
 ];
 
 export function initialCategories() {
-  return EXPENSE_DEFAULTS.map(([name, color], i) =>
-    ({ id: `e${pad2(i + 1)}`, type: 'expense', name, order: i, hidden: false, color }));
+  return withInsurance(EXPENSE_DEFAULTS.map(([name, color], i) =>
+    ({ id: `e${pad2(i + 1)}`, type: 'expense', name, order: i, hidden: false, color })));
+}
+
+// Fixed costs spec 7: the initial 固定費 (e19) is hidden, and 保険 (pale purple, like 固定費) takes its
+// place in the order; e19 and everything after it move back by one. An existing 保険 is not added again.
+export function withInsurance(categories) {
+  const list = categories.map(c => (c.id === 'e19' && !c.hidden ? { ...c, hidden: true } : c));
+  if (list.some(c => c.type === 'expense' && c.name === '保険')) return list;
+  const expense = list.filter(c => c.type === 'expense');
+  const at = list.find(c => c.id === 'e19')?.order ?? expense.reduce((max, c) => Math.max(max, c.order), -1) + 1;
+  return [
+    ...list.map(c => (c.type === 'expense' && c.order >= at ? { ...c, order: c.order + 1 } : c)),
+    { id: 'e21', type: 'expense', name: '保険', order: at, hidden: false, color: 'monthly' },
+  ];
+}
+
+// Fixed costs spec 7: once per data set (schemaVersion below 2; none means 1). Returns the same object when
+// there is nothing to do. Not a data change: lastChangedAt is kept, so the backup nudge is not triggered.
+export function migrateData(data) {
+  if ((data.settings.schemaVersion ?? 1) >= SCHEMA_VERSION) return data;
+  return {
+    ...data,
+    fixed: data.fixed ?? [],
+    categories: withInsurance(data.categories),
+    settings: { ...data.settings, schemaVersion: SCHEMA_VERSION },
+  };
 }
 
 export function initialMethods() {
@@ -250,9 +275,12 @@ export function buildBackup(data, now) {
     entries: data.entries,
     categories: data.categories,
     methods: data.methods,
+    fixed: data.fixed,
     settings: data.settings,
   };
 }
+
+const YM = /^\d{4}-\d{2}$/;
 
 function isValidEntry(e) {
   return e !== null && typeof e === 'object'
@@ -262,7 +290,23 @@ function isValidEntry(e) {
     && /^\d{4}-\d{2}-\d{2}$/.test(e.date)
     && typeof e.categoryId === 'string'
     && typeof e.createdAt === 'number'
-    && (e.memo === undefined || typeof e.memo === 'string');
+    && (e.memo === undefined || typeof e.memo === 'string')
+    // the fixed-cost mark: both or neither
+    && (e.fixedId === undefined
+      ? e.fixedMonth === undefined
+      : typeof e.fixedId === 'string' && YM.test(e.fixedMonth));
+}
+
+function isValidFixed(f) {
+  return f !== null && typeof f === 'object'
+    && typeof f.id === 'string'
+    && typeof f.name === 'string'
+    && typeof f.categoryId === 'string'
+    && Number.isInteger(f.amount) && f.amount > 0
+    && typeof f.methodId === 'string'
+    && Number.isInteger(f.day) && f.day >= 1 && f.day <= 31
+    && YM.test(f.startMonth)
+    && YM.test(f.doneThrough);
 }
 
 function isValidCategory(c) {
@@ -292,12 +336,16 @@ export function parseBackup(text) {
   if (Array.isArray(obj.records) && obj.schemaVersion === undefined) {
     return { ok: false, reason: '検証ページのバックアップなので戻せません。新しい日付のファイルを選んでね' };
   }
-  const shapeOk = obj.schemaVersion === SCHEMA_VERSION
-    && ['entries', 'categories', 'methods'].every(k => Array.isArray(obj[k]))
+  // Version 1 files (1.0.x) have no fixed costs; they are restored with none.
+  const v = obj.schemaVersion;
+  const lists = v === 1 ? ['entries', 'categories', 'methods'] : ['entries', 'categories', 'methods', 'fixed'];
+  const shapeOk = (v === 1 || v === SCHEMA_VERSION)
+    && lists.every(k => Array.isArray(obj[k]))
     && obj.settings !== null && typeof obj.settings === 'object'
     && typeof obj.exportedAt === 'number';
   if (!shapeOk) return { ok: false, reason: '形式がちがうバックアップです' };
-  if (!obj.categories.every(isValidCategory) || !obj.methods.every(isValidMethod)) {
+  const fixed = v === 1 ? [] : obj.fixed;
+  if (!obj.categories.every(isValidCategory) || !obj.methods.every(isValidMethod) || !fixed.every(isValidFixed)) {
     return { ok: false, reason: '形式がちがうバックアップです' };
   }
   if (!obj.entries.every(isValidEntry)) return { ok: false, reason: '記録の中身がおかしいバックアップです' };
@@ -309,6 +357,7 @@ export function parseBackup(text) {
       entries: obj.entries,
       categories: obj.categories,
       methods: obj.methods,
+      fixed,
       // The restored data equals the file, so it counts as "backed up, unchanged".
       settings: { ...obj.settings, lastBackupAt: obj.exportedAt, lastChangedAt: obj.exportedAt, nudgeSnoozedOn: null },
     },

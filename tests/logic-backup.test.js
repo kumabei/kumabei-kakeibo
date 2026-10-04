@@ -12,7 +12,7 @@ const entry = (createdAt, extra = {}) => ({
 });
 const daysAgo = n => NOW.getTime() - n * DAY_MS;
 const data = () => ({
-  entries: [entry(daysAgo(3))], categories: initialCategories(), methods: initialMethods(), settings: initialSettings(),
+  entries: [entry(daysAgo(3))], categories: initialCategories(), methods: initialMethods(), fixed: [], settings: initialSettings(),
 });
 
 test('backup file name carries the date', () => {
@@ -28,7 +28,7 @@ test('a backup round-trips and counts as unchanged after restoring', () => {
   assert.equal(r.ok, true);
   assert.equal(r.entryCount, 1);
   assert.equal(r.exportedAt, NOW.getTime());
-  assert.equal(r.data.categories.length, 20);
+  assert.equal(r.data.categories.length, 21);
   assert.equal(r.data.settings.lastBackupAt, NOW.getTime());
   assert.equal(r.data.settings.lastChangedAt, NOW.getTime());
   assert.equal(r.data.settings.nudgeSnoozedOn, null);
@@ -105,4 +105,49 @@ test('"later" silences the nudge for the rest of that day', () => {
 test('right after restoring there is no nudge, even long after the backup', () => {
   const r = parseBackup(JSON.stringify(buildBackup(data(), new Date(daysAgo(30)))));
   assert.equal(shouldNudgeBackup(r.data.entries, r.data.settings, NOW), false);
+});
+
+const FIXED = {
+  id: 'f-1', name: '住宅ローン', categoryId: 'e16', amount: 85000, methodId: 'm2', day: 27, hidden: false,
+  startMonth: '2026-10', doneThrough: '2026-10', createdAt: 1,
+};
+
+test('fixed costs and the marks on entries round-trip', () => {
+  const marked = entry(daysAgo(1), { fixedId: 'f-1', fixedMonth: '2026-10' });
+  const r = parseBackup(JSON.stringify(buildBackup({ ...data(), entries: [marked], fixed: [FIXED] }, NOW)));
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.data.fixed, [FIXED]);
+  assert.deepEqual(r.data.entries, [marked]);
+});
+
+test('a schemaVersion 1 file is accepted, with no fixed costs', () => {
+  const { fixed, ...v1 } = { ...buildBackup(data(), NOW), schemaVersion: 1 };
+  const r = parseBackup(JSON.stringify(v1));
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.data.fixed, []);
+});
+
+test('other versions, and a version 2 file without fixed, are rejected', () => {
+  for (const schemaVersion of [0, 3]) {
+    const file = { ...buildBackup(data(), NOW), schemaVersion };
+    assert.deepEqual(parseBackup(JSON.stringify(file)), { ok: false, reason: '形式がちがうバックアップです' });
+  }
+  const { fixed, ...noFixed } = buildBackup(data(), NOW);
+  assert.deepEqual(parseBackup(JSON.stringify(noFixed)), { ok: false, reason: '形式がちがうバックアップです' });
+});
+
+test('a fixed cost in a bad shape is rejected', () => {
+  const bads = [{ day: 0 }, { day: 32 }, { day: 1.5 }, { amount: 0 }, { amount: '85000' }, { startMonth: '2026-1' },
+    { doneThrough: undefined }, { name: 1 }, { methodId: null }, { categoryId: undefined }, { id: 3 }];
+  for (const bad of bads) {
+    const file = buildBackup({ ...data(), fixed: [{ ...FIXED, ...bad }] }, NOW);
+    assert.deepEqual(parseBackup(JSON.stringify(file)), { ok: false, reason: '形式がちがうバックアップです' }, JSON.stringify(bad));
+  }
+});
+
+test('an entry with half a mark is rejected', () => {
+  for (const half of [{ fixedId: 'f-1' }, { fixedMonth: '2026-10' }, { fixedId: 'f-1', fixedMonth: '2026-1' }]) {
+    const bad = buildBackup({ ...data(), entries: [entry(3, half)] }, NOW);
+    assert.deepEqual(parseBackup(JSON.stringify(bad)), { ok: false, reason: '記録の中身がおかしいバックアップです' }, JSON.stringify(half));
+  }
 });
