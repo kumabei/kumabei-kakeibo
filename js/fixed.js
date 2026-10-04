@@ -99,3 +99,40 @@ export function oneAtATime(fn) {
     return running;
   };
 }
+
+// Spec 5-2: when an expense is typed in with the same category and amount as a running fixed cost
+// (the first one in the settings order), from its start month on. The day is not looked at.
+export function manualCheck(fixedList, entries, draft) {
+  if (draft.type !== 'expense') return null;
+  const ym = monthOf(draft.date);
+  const f = sortFixed(fixedList).find(x => !x.hidden && x.categoryId === draft.categoryId
+    && x.amount === draft.amount && ym >= x.startMonth);
+  if (!f) return null;
+  if (findMark(entries, f.id, ym)) return { kind: 'recorded', fixed: f, ym };
+  return { kind: ym > f.doneThrough ? 'new' : 'deleted', fixed: f, ym };
+}
+
+// Spec 5-2 ［固定費の分として記録］: the entry as typed, marked as the fixed cost's payment for its month.
+// Like catchUpWrite, decided from what is stored inside the saving transaction.
+export function fixedEntryWrite({ fixed, entries, settings }, draft, fixedId, now, newId) {
+  const f = fixed.find(x => x.id === fixedId);
+  const ym = monthOf(draft.date);
+  // Already marked meanwhile (recorded automatically while Kumabee was asking): record it plainly.
+  const mark = Boolean(f) && !findMark(entries, fixedId, ym);
+  const entry = {
+    id: newId(), type: 'expense', amount: draft.amount, categoryId: draft.categoryId, methodId: draft.methodId,
+    date: draft.date, memo: draft.memo, createdAt: now, updatedAt: now,
+    ...(mark ? { fixedId, fixedMonth: ym } : {}),
+  };
+  const put = { entries: [entry] };
+  // Only the next month moves doneThrough: a month further ahead would skip the months between.
+  // (Its mark already keeps that month from being recorded again.)
+  if (mark && ym === addMonths(f.doneThrough, 1)) put.fixed = [{ ...f, doneThrough: ym }];
+  return { put, settings: { ...settings, lastMethodId: draft.methodId, lastChangedAt: now }, result: entry };
+}
+
+// Spec 4-3: the confirmation shown instead of "この記録を消しますか？" for an entry of a fixed cost.
+export function deleteConfirmText(entry, fixedList) {
+  const name = fixedList.find(f => f.id === entry.fixedId)?.name ?? entry.memo;
+  return `毎月の固定費（${name}）の${Number(entry.fixedMonth.slice(5))}月分です。消すと、この月はもう自動では入りません。消しますか？`;
+}
