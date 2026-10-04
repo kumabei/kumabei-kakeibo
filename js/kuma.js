@@ -18,7 +18,11 @@ export const SCENES = {
   backupNudge: { image: 'k07', line: LINES.backupNudge },
   backupDone: { image: 'k02', line: LINES.backupDone },
   missing: { image: 'k08', line: LINES.missing },
+  autoRecorded: { image: 'k09', line: LINES.autoRecorded }, // the line is filled in by fixed.js autoRecordLine
 };
+
+// Kumabee's picture when he asks about a fixed cost (spec 5-1, 5-2).
+export const FIXED_ASK_IMAGE = 'k16';
 
 // Keyed by the initial category ids (logic.js initialCategories), so renaming keeps the picture.
 export const CATEGORY_IMAGES = {
@@ -50,18 +54,16 @@ export function imageSrc(key) {
   return `img/kuma/${key}.png`;
 }
 
-// Unique characters of everything Kumabee says, in first-seen order. Used to build the Google
-// Fonts `text=` subset so only the characters actually needed are downloaded.
-export function lineChars() {
-  const seen = new Set();
-  for (const line of Object.values(LINES)) {
-    for (const ch of line) seen.add(ch);
-  }
-  return [...seen].join('');
+// Unique characters of everything Kumabee says ({…} marks left out), the digits that fill them, and
+// `extra` (the fixed-cost names), in first-seen order. Used to build the Google Fonts `text=` subset
+// so only the characters actually needed are downloaded.
+export function lineChars(extra = '') {
+  const text = Object.values(LINES).map(line => line.replace(/\{\w+\}/g, '')).join('') + '0123456789' + extra;
+  return [...new Set(text)].join('');
 }
 
-// Draws Kumabee into `el`. A transient speech bubble disappears after 3 seconds.
-export function renderKuma(el, { image, line = null, transient = false }) {
+// Draws Kumabee into `el`. A transient speech bubble disappears after `ms` (3 seconds unless told).
+export function renderKuma(el, { image, line = null, transient = false, ms = 3000 }) {
   const img = document.createElement('img');
   img.src = imageSrc(image);
   img.alt = '';
@@ -71,7 +73,7 @@ export function renderKuma(el, { image, line = null, transient = false }) {
     bubble.className = 'bubble';
     bubble.textContent = line;
     el.prepend(bubble);
-    if (transient) setTimeout(() => bubble.remove(), 3000);
+    if (transient) setTimeout(() => bubble.remove(), ms);
   }
   // Bounce once. The class is removed afterwards so moving the element in the DOM does not replay it.
   el.classList.remove('pop');

@@ -13,4 +13,13 @@ export const LINES = {
   backupDone: 'ありがとう！安心だね',
   missing: '金額と分類を入れてね',
   edited: '直しました',
+  // Fixed costs. {…} marks are filled in by js/fixed.js.
+  autoRecorded: '{names}、自動で記録しておいたよ～！',
+  autoRecordedMany: '{name}など{count}件、自動で記録しておいたよ～！',
+  thisMonth: '今月の',
+  nameJoin: 'と',
+  askStarted: '今月分（{date}）はもう入れた？',
+  askFixedNew: 'これ、毎月の固定費（{name}）にあるけど？',
+  askFixedRecorded: '{month}の{name}はもう記録してあるよ。それでも入れる？',
+  askFixedDeleted: '{month}の{name}は消してあるよ。固定費の分として入れ直す？',
 };

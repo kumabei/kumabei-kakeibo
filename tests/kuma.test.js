@@ -52,10 +52,12 @@ test('imageSrc', () => {
   assert.equal(imageSrc('k01'), 'img/kuma/k01.png');
 });
 
-test('lineChars includes every character of every line, no duplicates', () => {
-  const chars = lineChars();
+test('lineChars: every character Kumabee can say, the digits and the extra text, no duplicates', () => {
+  const chars = lineChars('住宅ローンWi-Fi');
   assert.equal(new Set(chars).size, chars.length);
   for (const line of Object.values(LINES)) {
-    for (const ch of line) assert.ok(chars.includes(ch), `missing: ${ch}`);
+    for (const ch of line.replace(/\{\w+\}/g, '')) assert.ok(chars.includes(ch), `missing: ${ch}`);
   }
+  for (const ch of '0123456789住宅ローンWi-Fi') assert.ok(chars.includes(ch), `missing: ${ch}`);
+  assert.ok(!chars.includes('{'), 'the marks are not characters to load');
 });

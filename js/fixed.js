@@ -2,6 +2,7 @@
 // Pure functions like logic.js: no DOM and no IndexedDB here, everything is unit-tested with `node --test`.
 // Months are 'YYYY-MM' strings, so comparing them as strings compares the months.
 import { monthOf, addMonths, daysInMonth, formatYen } from './logic.js';
+import { LINES } from './lines.js';
 
 // The payment date in month ym; a day the month doesn't have becomes its last day (spec 4-2).
 export function payDate(ym, day) {
@@ -153,4 +154,36 @@ export function fixedSummary(fixedList, entries, ym) {
   if (rows.length === 0) return null;
   const sum = list => list.reduce((s, r) => s + r.amount, 0);
   return { rows, recorded: sum(rows.filter(r => r.done)), total: sum(rows) };
+}
+
+export function fill(template, vars) {
+  return template.replace(/\{(\w+)\}/g, (_, k) => String(vars[k]));
+}
+
+const monthNumber = ym => Number(ym.slice(5));
+
+// Spec 4-4. recorded: catchUpWrite's result. 今月の only when everything was for this month.
+// Two of the same fixed cost (two months) count as several, so a name is never listed twice.
+export function autoRecordLine(recorded, thisMonth) {
+  const names = [...new Set(recorded.map(r => r.name))];
+  if (recorded.length <= 2 && names.length === recorded.length) {
+    const prefix = recorded.every(r => r.ym === thisMonth) ? LINES.thisMonth : '';
+    return fill(LINES.autoRecorded, { names: prefix + names.join(LINES.nameJoin) });
+  }
+  return fill(LINES.autoRecordedMany, { name: names[0], count: recorded.length });
+}
+
+// Spec 5-1: "今月分（10月27日）はもう入れた？"
+export function askStartedLine(day, today) {
+  const ym = monthOf(today);
+  return fill(LINES.askStarted, { date: `${monthNumber(ym)}月${Number(payDate(ym, day).slice(8))}日` });
+}
+
+// Spec 5-2. check: manualCheck's result.
+export function manualCheckLine({ kind, fixed, ym }, thisMonth) {
+  if (kind === 'new') return fill(LINES.askFixedNew, { name: fixed.name });
+  if (kind === 'recorded') {
+    return fill(LINES.askFixedRecorded, { month: ym === thisMonth ? '今月' : `${monthNumber(ym)}月`, name: fixed.name });
+  }
+  return fill(LINES.askFixedDeleted, { month: `${monthNumber(ym)}月`, name: fixed.name });
 }
