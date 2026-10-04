@@ -39,3 +39,63 @@ export function fixedRowText(f, categories, methods) {
   const method = methods.find(m => m.id === f.methodId);
   return `${f.day}日　${f.name}　${formatYen(f.amount)}　${cat?.name ?? '（分類なし）'}・${method?.name ?? ''}`;
 }
+
+// Spec 4-2. `snapshot` ({ fixed, entries, settings }) must be read inside the same readwrite transaction
+// that saves the result (db.update), so a second run sees the first one's writes and records nothing.
+// For each running fixed cost, the months after doneThrough up to this month are looked at in order,
+// stopping at a payment day still to come. A month with a marked entry is not recorded again.
+export function catchUpWrite({ fixed, entries, settings }, today, now, newId) {
+  const thisMonth = monthOf(today);
+  const newEntries = [];
+  const changed = [];
+  const recorded = [];
+  for (const f of sortFixed(fixed)) {
+    if (f.hidden) continue;
+    let done = f.doneThrough;
+    for (let ym = addMonths(done, 1); ym <= thisMonth; ym = addMonths(ym, 1)) {
+      const date = payDate(ym, f.day);
+      if (date > today) break;
+      if (!findMark(entries, f.id, ym)) {
+        const entry = {
+          id: newId(), type: 'expense', amount: f.amount, categoryId: f.categoryId, methodId: f.methodId,
+          date, memo: f.name, createdAt: now, updatedAt: now, fixedId: f.id, fixedMonth: ym,
+        };
+        newEntries.push(entry);
+        recorded.push({ name: f.name, ym, entry });
+      }
+      done = ym;
+    }
+    if (done !== f.doneThrough) changed.push({ ...f, doneThrough: done });
+  }
+  const put = {};
+  if (newEntries.length) put.entries = newEntries;
+  if (changed.length) put.fixed = changed;
+  // A new entry is a data change (the backup nudge counts it).
+  return { put, settings: newEntries.length ? { ...settings, lastChangedAt: now } : null, result: recorded };
+}
+
+// Spec 4-2: runs fn (resolving to an array) one call at a time. A call made while it runs does not start
+// a second run alongside: fn runs once more afterwards. The first caller gets every result, the others [].
+export function oneAtATime(fn) {
+  let running = null;
+  let again = false;
+  return () => {
+    if (running) {
+      again = true;
+      return running.then(() => []);
+    }
+    running = (async () => {
+      const out = [];
+      try {
+        do {
+          again = false;
+          out.push(...await fn());
+        } while (again);
+      } finally {
+        running = null;
+      }
+      return out;
+    })();
+    return running;
+  };
+}
