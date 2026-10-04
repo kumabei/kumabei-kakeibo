@@ -1,15 +1,20 @@
 // The data the screens draw from, and every change to it. Changes are saved first, then listeners re-render.
 import * as db from './db.js';
-import { newCategoryColor } from './logic.js';
+import { newCategoryColor, migrateData, todayStr } from './logic.js';
+import { catchUpWrite, fixedEntryWrite, oneAtATime } from './fixed.js';
 
-export const state = { entries: [], categories: [], methods: [], settings: {} };
+export const state = { entries: [], categories: [], methods: [], fixed: [], settings: {} };
 
 const listeners = new Set();
 export function subscribe(fn) { listeners.add(fn); }
 function emit() { listeners.forEach(fn => fn()); }
 
 export async function init() {
-  Object.assign(state, await db.loadAll());
+  const loaded = await db.loadAll();
+  const data = migrateData(loaded);
+  // Fixed costs spec 7, once per data set. Not a data change, so lastChangedAt is not stamped.
+  if (data !== loaded) await db.write({ put: { categories: data.categories }, settings: data.settings });
+  Object.assign(state, data);
   emit();
 }
 
@@ -57,7 +62,7 @@ export async function removeEntry(id) {
   emit();
 }
 
-// storeName: 'categories' | 'methods'. Adds the item or replaces the one with the same id.
+// storeName: 'categories' | 'methods' | 'fixed'. Adds the item or replaces the one with the same id.
 export async function saveItem(storeName, item) {
   const settings = stamped();
   await db.write({ put: { [storeName]: [item] }, settings });
@@ -75,6 +80,37 @@ export function addCategory(type, name) {
 
 export function addMethod(name) {
   return saveItem('methods', { id: `m-${crypto.randomUUID()}`, name, order: nextOrder(state.methods), hidden: false });
+}
+
+// A fixed cost added, edited, stopped (hidden) or resumed. Fixed costs are never deleted.
+export function saveFixed(f) {
+  return saveItem('fixed', f);
+}
+
+function mergeById(list, items) {
+  const known = new Set(list.map(x => x.id));
+  const byId = new Map(items.map(x => [x.id, x]));
+  return [...list.map(x => byId.get(x.id) ?? x), ...items.filter(x => !known.has(x.id))];
+}
+
+// Saves what decide (a fixed.js *Write function) makes of the stored data, read in the same transaction.
+async function applyUpdate(decide) {
+  const w = await db.update(['fixed', 'entries'], decide);
+  const put = Object.entries(w.put ?? {});
+  for (const [name, items] of put) state[name] = mergeById(state[name], items);
+  if (w.settings) state.settings = w.settings;
+  if (put.length || w.settings) emit();
+  return w.result;
+}
+
+// Fixed costs spec 4-2: records every fixed cost that is due and resolves with what was recorded.
+// One run at a time; a call made meanwhile runs once afterwards.
+export const catchUpFixed = oneAtATime(() =>
+  applyUpdate(snap => catchUpWrite(snap, todayStr(), Date.now(), () => crypto.randomUUID())));
+
+// Fixed costs spec 5-2 ［固定費の分として記録］.
+export function addFixedEntry(draft, fixedId) {
+  return applyUpdate(snap => fixedEntryWrite(snap, draft, fixedId, Date.now(), () => crypto.randomUUID()));
 }
 
 // ids: the new order of one list (e.g. the expense categories). Each item gets order = its index.
@@ -96,8 +132,10 @@ export async function updateSettings(patch) {
   emit();
 }
 
+// A backup of version 1 gets the fixed costs spec 7 change before it is saved, all in one go.
 export async function replaceAllData(data) {
-  await db.replaceAll(data);
-  Object.assign(state, structuredClone(data));
+  const next = migrateData(data);
+  await db.replaceAll(next);
+  Object.assign(state, structuredClone(next));
   emit();
 }

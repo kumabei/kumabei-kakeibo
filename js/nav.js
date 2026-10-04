@@ -19,3 +19,8 @@ export function show(name) {
 export function rerender() {
   if (current) views[current].render(rootOf(current), { entering: false });
 }
+
+// The view on screen, or null before the first show().
+export function currentView() {
+  return current;
+}
