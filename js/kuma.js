@@ -54,11 +54,11 @@ export function imageSrc(key) {
   return `img/kuma/${key}.png`;
 }
 
-// Unique characters of everything Kumabee says ({…} marks left out), the digits that fill them, and
+// Unique characters of everything Kumabee says ({…} marks left out), the digits and 日 that fill them, and
 // `extra` (the fixed-cost names), in first-seen order. Used to build the Google Fonts `text=` subset
 // so only the characters actually needed are downloaded.
 export function lineChars(extra = '') {
-  const text = Object.values(LINES).map(line => line.replace(/\{\w+\}/g, '')).join('') + '0123456789' + extra;
+  const text = Object.values(LINES).map(line => line.replace(/\{\w+\}/g, '')).join('') + '0123456789日' + extra;
   return [...new Set(text)].join('');
 }
 

@@ -58,6 +58,6 @@ test('lineChars: every character Kumabee can say, the digits and the extra text,
   for (const line of Object.values(LINES)) {
     for (const ch of line.replace(/\{\w+\}/g, '')) assert.ok(chars.includes(ch), `missing: ${ch}`);
   }
-  for (const ch of '0123456789住宅ローンWi-Fi') assert.ok(chars.includes(ch), `missing: ${ch}`);
+  for (const ch of '0123456789日住宅ローンWi-Fi') assert.ok(chars.includes(ch), `missing: ${ch}`);
   assert.ok(!chars.includes('{'), 'the marks are not characters to load');
 });

@@ -83,20 +83,27 @@ function openFixedSheet(existing) {
     oninput: e => { d.name = e.target.value; drawBody(); },
   });
 
+  let busy = false;
   const submit = async () => {
-    const draft = { name: d.name.trim(), amount: amountValue(d.amountStr), categoryId: d.categoryId, methodId: d.methodId, day: d.day };
-    if (existing) {
-      // Editing changes only the entries recorded from now on (spec 4-3); no question here (spec 6-1).
-      if (!(await saved(() => saveFixed({ ...latest(existing), ...draft })))) return;
+    if (busy) return;
+    busy = true;
+    try {
+      const draft = { name: d.name.trim(), amount: amountValue(d.amountStr), categoryId: d.categoryId, methodId: d.methodId, day: d.day };
+      if (existing) {
+        // Editing changes only the entries recorded from now on (spec 4-3); no question here (spec 6-1).
+        if (!(await saved(() => saveFixed({ ...latest(existing), ...draft })))) return;
+        closeSheet();
+        showToast(LINES.edited, { image: SCENES.recorded.image });
+        return;
+      }
+      const already = await askStarted(draft.day);
+      if (!(await saved(() => saveFixed(newFixed(draft, already, todayStr(), `f-${crypto.randomUUID()}`, Date.now()))))) return;
       closeSheet();
-      showToast(LINES.edited, { image: SCENES.recorded.image });
-      return;
+      // ［まだ］ with the day already passed: this month's is recorded at once (spec 5-1).
+      if ((await checkFixed()).length === 0) showToast(`${draft.name}を登録しました`);
+    } finally {
+      busy = false;
     }
-    const already = await askStarted(draft.day);
-    if (!(await saved(() => saveFixed(newFixed(draft, already, todayStr(), `f-${crypto.randomUUID()}`, Date.now()))))) return;
-    closeSheet();
-    // ［まだ］ with the day already passed: this month's is recorded at once (spec 5-1).
-    if ((await checkFixed()).length === 0) showToast(`${draft.name}を登録しました`);
   };
 
   function drawBody() {

@@ -36,8 +36,8 @@ async function run(names, mode, fn) {
   return new Promise((resolve, reject) => {
     const t = db.transaction(names, mode);
     const stores = Object.fromEntries(names.map(n => [n, t.objectStore(n)]));
-    t.onerror = () => reject(t.error);
-    t.onabort = () => reject(t.error);
+    t.onerror = () => reject(t.error ?? new Error('保存に失敗しました'));
+    t.onabort = () => reject(t.error ?? new Error('保存に失敗しました'));
     let out;
     try {
       out = fn(stores);
@@ -90,8 +90,8 @@ export async function update(names, decide) {
   return new Promise((resolve, reject) => {
     const t = db.transaction(scope, 'readwrite');
     const s = Object.fromEntries(scope.map(n => [n, t.objectStore(n)]));
-    t.onerror = () => reject(t.error);
-    t.onabort = () => reject(t.error);
+    t.onerror = () => reject(t.error ?? new Error('保存に失敗しました'));
+    t.onabort = () => reject(t.error ?? new Error('保存に失敗しました'));
     const reads = names.map(n => [n, s[n].getAll()]);
     const settingsReq = s.settings.get('main');
     let out;
