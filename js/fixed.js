@@ -136,3 +136,21 @@ export function deleteConfirmText(entry, fixedList) {
   const name = fixedList.find(f => f.id === entry.fixedId)?.name ?? entry.memo;
   return `毎月の固定費（${name}）の${Number(entry.fixedMonth.slice(5))}月分です。消すと、この月はもう自動では入りません。消しますか？`;
 }
+
+// Spec 6-2: the home card for month ym. A fixed cost with its marked entry for ym shows that entry's
+// amount with ✓ (stopped or not). One still to be processed (running, ym after doneThrough) shows its
+// amount and the payment day. Done without an entry (deleted) or before the start: not shown.
+export function fixedSummary(fixedList, entries, ym) {
+  const rows = [];
+  for (const f of sortFixed(fixedList)) {
+    const mark = findMark(entries, f.id, ym);
+    if (mark) {
+      rows.push({ id: f.id, name: f.name, amount: mark.amount, done: true, day: null });
+    } else if (!f.hidden && ym > f.doneThrough && ym >= f.startMonth) {
+      rows.push({ id: f.id, name: f.name, amount: f.amount, done: false, day: Number(payDate(ym, f.day).slice(8)) });
+    }
+  }
+  if (rows.length === 0) return null;
+  const sum = list => list.reduce((s, r) => s + r.amount, 0);
+  return { rows, recorded: sum(rows.filter(r => r.done)), total: sum(rows) };
+}
