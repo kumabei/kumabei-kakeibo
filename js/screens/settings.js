@@ -6,6 +6,7 @@ import { exportBackup, importBackup } from '../backup.js';
 import { show, rerender } from '../nav.js';
 import { VERSION } from '../version.js';
 import { SCENES, renderKuma } from '../kuma.js';
+import { fixedSection } from './fixed.js';
 
 // Runs a data change; a failed save is shown instead of being lost silently, and the
 // screen is redrawn from state so a visually-moved-but-unsaved row doesn't linger.
@@ -67,6 +68,7 @@ export function render(root) {
     section('支出の分類', 'categories', state.categories.filter(c => c.type === 'expense'), name => addCategory('expense', name)),
     section('収入の分類', 'categories', state.categories.filter(c => c.type === 'income'), name => addCategory('income', name)),
     section('支払い方法', 'methods', state.methods, name => addMethod(name)),
+    fixedSection(),
     backupSection(),
     kuma,
     el('div', { class: 'version' }, `バージョン ${VERSION}`));

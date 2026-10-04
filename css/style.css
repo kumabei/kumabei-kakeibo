@@ -138,3 +138,16 @@ h1 { font-size: 20px; margin: 0; }
 .add { margin-top: 8px; color: var(--accent); font-weight: bold; padding: 8px 0; }
 .wide { display: block; width: 100%; background: var(--pink); border-radius: 14px; padding: 14px; margin-top: 8px; font-weight: bold; font-size: 18px; }
 .version { text-align: center; color: var(--sub); font-size: 13px; margin: 16px 0; }
+
+/* ---- fixed costs ---- */
+.kuma-ask img { width: 72px; height: 72px; }
+.ask-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.sheet-spacer { width: 3em; }
+.fixed-label { font-weight: bold; margin: 12px 0 4px; }
+.fixed-sheet .memo { margin-top: 0; }
+.day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.day { height: 38px; border-radius: 10px; background: #fff; border: 2px solid var(--line); font-size: 16px; }
+.day.on { background: var(--pink); border-color: var(--accent); font-weight: bold; }
+.fixed-note { margin-top: 4px; font-size: 13px; }
+.fixed-item .item-name { font-size: 15px; }
+.fixed-item.hidden-item .item-name { text-decoration: none; }

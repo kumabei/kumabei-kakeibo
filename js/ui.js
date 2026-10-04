@@ -81,6 +81,24 @@ export function askText(title, initial = '') {
   });
 }
 
+// Kumabee asks with a speech bubble and buttons (fixed costs spec 5-1, 5-2). Resolves with the value
+// of the tapped button. choices: [[value, label], …]; the first one is the suggested answer.
+export function askChoice(image, line, choices) {
+  return new Promise(resolve => {
+    const backdrop = el('div', { class: 'dialog-backdrop' },
+      el('div', { class: 'dialog' },
+        el('div', { class: 'kuma kuma-ask' },
+          el('div', { class: 'bubble' }, line),
+          el('img', { src: imageSrc(image), alt: '' })),
+        el('div', { class: 'ask-actions' }, choices.map(([value, label], i) =>
+          el('button', {
+            class: 'dialog-btn' + (i === 0 ? ' primary' : ''),
+            onclick: () => { backdrop.remove(); resolve(value); },
+          }, label)))));
+    document.body.append(backdrop);
+  });
+}
+
 export function monthNav(ym, onChange) {
   return el('div', { class: 'month-nav' },
     el('button', { class: 'nav-btn', 'aria-label': '前の月', onclick: () => onChange(addMonths(ym, -1)) }, '‹'),

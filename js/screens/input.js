@@ -13,6 +13,7 @@ import { show } from '../nav.js';
 const KEYS = ['7', '8', '9', 'back', '4', '5', '6', 'clear', '1', '2', '3', '00', '0'];
 const KEY_LABELS = { back: '⌫', clear: 'C' };
 const GUARD_MS = 1000;
+const ANNOUNCE_MS = 5000; // how long the auto-record line stays (fixed costs spec 4-4)
 
 let form = null; // the new-entry form; kept across re-renders
 let formDay = null; // the day form.date was defaulted to (blankForm), so an overnight resume can catch up
@@ -20,6 +21,7 @@ let rootEl = null;
 let busyUntil = 0; // taps on the submit button are ignored until then (double-tap guard)
 let bumpNext = false; // play the small bump on the next drawn submit button
 let firstShow = true;
+let pending = null; // an auto-record line waiting for the input screen to be drawn
 const kumaEl = el('div', { class: 'kuma kuma-input' });
 
 function blankForm(type, methodId) {
@@ -29,6 +31,21 @@ function blankForm(type, methodId) {
 
 function setKuma(scene) {
   renderKuma(kumaEl, { ...scene, transient: true });
+}
+
+// Fixed costs spec 4-4: Kumabee tells what was recorded automatically, instead of "welcome".
+export function announce(line) {
+  const scene = { image: SCENES.autoRecorded.image, line, transient: true, ms: ANNOUNCE_MS };
+  if (rootEl && !rootEl.hidden) renderKuma(kumaEl, scene);
+  else pending = scene;
+}
+
+// The keypad keys without the submit button. Shared with the fixed-cost sheet.
+export function keyButtons(onKey) {
+  return KEYS.map(k => el('button', {
+    class: 'key' + (KEY_LABELS[k] ? ' fn' : ''),
+    onclick: () => onKey(k),
+  }, KEY_LABELS[k] ?? k));
 }
 
 export function render(root, { entering = false } = {}) {
@@ -43,7 +60,9 @@ export function render(root, { entering = false } = {}) {
     formDay = today;
   }
   if (entering) {
-    setKuma(firstShow ? SCENES.welcome : SCENES.peek);
+    if (pending) renderKuma(kumaEl, pending);
+    else setKuma(firstShow ? SCENES.welcome : SCENES.peek);
+    pending = null;
     firstShow = false;
   }
   const bump = bumpNext;
@@ -174,10 +193,7 @@ function buildForm(f, { rerender, submitLabel, onSubmit, onMissing, kuma = null,
     : null;
 
   const pad = el('div', { class: 'keypad' },
-    KEYS.map(k => el('button', {
-      class: 'key' + (KEY_LABELS[k] ? ' fn' : ''),
-      onclick: () => set({ amountStr: applyKey(f.amountStr, k) }),
-    }, KEY_LABELS[k] ?? k)),
+    keyButtons(k => set({ amountStr: applyKey(f.amountStr, k) })),
     el('button', {
       class: 'record' + (ready ? '' : ' not-ready') + (bump ? ' bump' : ''),
       onclick: () => {
