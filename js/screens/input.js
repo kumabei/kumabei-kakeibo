@@ -1,12 +1,13 @@
 // Input screen (the app opens here) and the editor sheet, which reuses the same form parts.
-import { state, addEntry, updateEntry, removeEntry, addCategory } from '../state.js';
+import { state, addEntry, updateEntry, removeEntry, addCategory, addFixedEntry } from '../state.js';
 import {
-  todayStr, addDays, applyKey, amountValue, formatNumber, formatYen, formatDateLabel,
+  todayStr, addDays, monthOf, applyKey, amountValue, formatNumber, formatYen, formatDateLabel,
   visibleSorted, listWithCurrent, pickDefaultMethod, expenseOnDate, isFirstRecordToday, colorOf,
 } from '../logic.js';
-import { SCENES, recordReaction, renderKuma } from '../kuma.js';
+import { manualCheck, manualCheckLine, deleteConfirmText } from '../fixed.js';
+import { SCENES, FIXED_ASK_IMAGE, recordReaction, renderKuma } from '../kuma.js';
 import { LINES } from '../lines.js';
-import { el, showToast, openSheet, closeSheet, askText } from '../ui.js';
+import { el, showToast, openSheet, closeSheet, askText, askChoice } from '../ui.js';
 import { show } from '../nav.js';
 
 // Keypad, 4 per row; the submit button fills the last row next to 0.
@@ -14,6 +15,12 @@ const KEYS = ['7', '8', '9', 'back', '4', '5', '6', 'clear', '1', '2', '3', '00'
 const KEY_LABELS = { back: '⌫', clear: 'C' };
 const GUARD_MS = 1000;
 const ANNOUNCE_MS = 5000; // how long the auto-record line stays (fixed costs spec 4-4)
+// Fixed costs spec 5-2: the buttons for each state of the month. [value, label]; the first is suggested.
+const FIXED_CHOICES = {
+  new: [['fixed', '固定費の分として記録'], ['normal', '別のものとして記録'], ['cancel', 'やめる']],
+  deleted: [['fixed', '固定費の分として記録'], ['normal', '別のものとして記録'], ['cancel', 'やめる']],
+  recorded: [['normal', '入れる'], ['cancel', 'やめる']],
+};
 
 let form = null; // the new-entry form; kept across re-renders
 let formDay = null; // the day form.date was defaulted to (blankForm), so an overnight resume can catch up
@@ -80,12 +87,22 @@ export function render(root, { entering = false } = {}) {
 
 async function submitNew() {
   const f = form;
+  const draft = {
+    type: f.type, amount: amountValue(f.amountStr), categoryId: f.categoryId,
+    methodId: f.methodId, date: f.date, memo: f.memo.trim(),
+  };
+  // Fixed costs spec 5-2: the same category and amount as a fixed cost → Kumabee asks first.
+  const check = manualCheck(state.fixed, state.entries, draft);
+  const choice = check
+    ? await askChoice(FIXED_ASK_IMAGE, manualCheckLine(check, monthOf(todayStr())), FIXED_CHOICES[check.kind])
+    : 'normal';
+  if (choice === 'cancel') { // back to the form, with what was typed
+    busyUntil = 0;
+    return;
+  }
   let entry;
   try {
-    entry = await addEntry({
-      type: f.type, amount: amountValue(f.amountStr), categoryId: f.categoryId,
-      methodId: f.methodId, date: f.date, memo: f.memo.trim(),
-    });
+    entry = choice === 'fixed' ? await addFixedEntry(draft, check.fixed.id) : await addEntry(draft);
   } catch (e) {
     busyUntil = 0;
     showToast('保存できませんでした：' + e.message);
@@ -228,7 +245,8 @@ export function openEditor(entry) {
     showToast(LINES.edited, { image: SCENES.recorded.image });
   };
   const del = async () => {
-    if (!confirm('この記録を消しますか？')) return;
+    // Fixed costs spec 4-3: a stronger confirmation for an entry of a fixed cost.
+    if (!confirm(entry.fixedId ? deleteConfirmText(entry, state.fixed) : 'この記録を消しますか？')) return;
     try {
       await removeEntry(entry.id);
     } catch (e) {
