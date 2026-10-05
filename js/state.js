@@ -82,7 +82,7 @@ export function addMethod(name) {
   return saveItem('methods', { id: `m-${crypto.randomUUID()}`, name, order: nextOrder(state.methods), hidden: false });
 }
 
-// A fixed cost added, edited, stopped (hidden) or resumed. Fixed costs are never deleted.
+// A fixed cost added, edited, stopped (hidden), resumed or deleted (only marked: see deletedFixed in fixed.js).
 export function saveFixed(f) {
   return saveItem('fixed', f);
 }

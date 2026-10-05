@@ -34,6 +34,17 @@ export function resumedFixed(f, alreadyEntered, today) {
   return { ...f, hidden: false, ...startMonths(today, alreadyEntered) };
 }
 
+// Ver.1.1.1: deleting takes it off the settings list for good. It stays stored (stopped), so its entries keep
+// their 🔁 and the home card still shows the months it was paid.
+export function deletedFixed(f) {
+  return { ...f, hidden: true, deleted: true };
+}
+
+// The settings list: everything but the deleted ones, in the settings order.
+export function listedFixed(list) {
+  return sortFixed(list.filter(f => !f.deleted));
+}
+
 // One row of the settings list: "27日　住宅ローン　85,000円　住居費・カード".
 export function fixedRowText(f, categories, methods) {
   const cat = categories.find(c => c.id === f.categoryId);

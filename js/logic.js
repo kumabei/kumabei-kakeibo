@@ -280,14 +280,21 @@ export function buildBackup(data, now) {
   };
 }
 
-const YM = /^\d{4}-\d{2}$/;
+// Months 01-12 only, and dates that exist (2026-02-31 does not).
+const YM = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+function isRealDate(s) {
+  if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const day = Number(s.slice(8));
+  return YM.test(s.slice(0, 7)) && day >= 1 && day <= daysInMonth(s.slice(0, 7));
+}
 
 function isValidEntry(e) {
   return e !== null && typeof e === 'object'
     && typeof e.id === 'string'
     && (e.type === 'expense' || e.type === 'income')
     && Number.isInteger(e.amount) && e.amount > 0
-    && /^\d{4}-\d{2}-\d{2}$/.test(e.date)
+    && isRealDate(e.date)
     && typeof e.categoryId === 'string'
     && typeof e.createdAt === 'number'
     && (e.memo === undefined || typeof e.memo === 'string')
@@ -306,7 +313,8 @@ function isValidFixed(f) {
     && typeof f.methodId === 'string'
     && Number.isInteger(f.day) && f.day >= 1 && f.day <= 31
     && YM.test(f.startMonth)
-    && YM.test(f.doneThrough);
+    && YM.test(f.doneThrough)
+    && (f.deleted === undefined || typeof f.deleted === 'boolean');
 }
 
 function isValidCategory(c) {

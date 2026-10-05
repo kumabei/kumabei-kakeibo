@@ -151,3 +151,31 @@ test('an entry with half a mark is rejected', () => {
     assert.deepEqual(parseBackup(JSON.stringify(bad)), { ok: false, reason: '記録の中身がおかしいバックアップです' }, JSON.stringify(half));
   }
 });
+
+test('a deleted fixed cost round-trips; a non-boolean deleted is rejected', () => {
+  const gone = { ...FIXED, hidden: true, deleted: true };
+  const r = parseBackup(JSON.stringify(buildBackup({ ...data(), fixed: [gone] }, NOW)));
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.data.fixed, [gone]);
+  const bad = buildBackup({ ...data(), fixed: [{ ...FIXED, deleted: 'yes' }] }, NOW);
+  assert.deepEqual(parseBackup(JSON.stringify(bad)), { ok: false, reason: '形式がちがうバックアップです' });
+});
+
+test('months that cannot be are rejected', () => {
+  for (const bad of [{ startMonth: '2026-13' }, { startMonth: '2026-00' }, { doneThrough: '2026-13' }]) {
+    const file = buildBackup({ ...data(), fixed: [{ ...FIXED, ...bad }] }, NOW);
+    assert.deepEqual(parseBackup(JSON.stringify(file)), { ok: false, reason: '形式がちがうバックアップです' }, JSON.stringify(bad));
+  }
+  const marked = buildBackup({ ...data(), entries: [entry(3, { fixedId: 'f-1', fixedMonth: '2026-13' })] }, NOW);
+  assert.deepEqual(parseBackup(JSON.stringify(marked)), { ok: false, reason: '記録の中身がおかしいバックアップです' });
+});
+
+test('dates that cannot be are rejected; real ones (Feb 29 in a leap year) pass', () => {
+  for (const date of ['2026-02-29', '2026-02-31', '2026-04-31', '2026-13-01', '2026-00-10', '2026-10-00', '2026-10-32']) {
+    const file = buildBackup({ ...data(), entries: [entry(3, { date })] }, NOW);
+    assert.deepEqual(parseBackup(JSON.stringify(file)), { ok: false, reason: '記録の中身がおかしいバックアップです' }, date);
+  }
+  for (const date of ['2028-02-29', '2026-12-31', '2026-01-01']) {
+    assert.equal(parseBackup(JSON.stringify(buildBackup({ ...data(), entries: [entry(3, { date })] }, NOW))).ok, true, date);
+  }
+});

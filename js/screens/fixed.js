@@ -2,7 +2,7 @@
 // "毎月の固定費" list in the settings with its add / edit sheet (spec 5-1, 6-1).
 import { state, saveFixed, catchUpFixed } from '../state.js';
 import { todayStr, monthOf, amountValue, applyKey, formatNumber, listWithCurrent, pickDefaultMethod, colorOf } from '../logic.js';
-import { sortFixed, newFixed, resumedFixed, fixedRowText, autoRecordLine, askStartedLine } from '../fixed.js';
+import { listedFixed, newFixed, resumedFixed, deletedFixed, fixedRowText, autoRecordLine, askStartedLine } from '../fixed.js';
 import { SCENES, FIXED_ASK_IMAGE } from '../kuma.js';
 import { LINES } from '../lines.js';
 import { el, setChildren, openSheet, closeSheet, showToast, askChoice } from '../ui.js';
@@ -57,12 +57,19 @@ async function resume(f) {
   if ((await checkFixed()).length === 0) showToast(`${f.name}を再開しました`);
 }
 
+// Ver.1.1.1: only a stopped one can be deleted (two steps, so a running one is never deleted by mistake).
+async function remove(f) {
+  if (!confirm(`${f.name}を一覧から消しますか？これまでの記録はそのまま残ります`)) return;
+  if (await saved(() => saveFixed(deletedFixed(latest(f))))) showToast(`${f.name}を消しました`);
+}
+
 export function fixedSection() {
-  const rows = sortFixed(state.fixed).map(f =>
+  const rows = listedFixed(state.fixed).map(f =>
     el('div', { class: 'item-row fixed-item' + (f.hidden ? ' hidden-item' : '') },
       el('span', { class: 'item-name' }, fixedRowText(f, state.categories, state.methods)),
       f.hidden
-        ? el('button', { class: 'small', onclick: () => resume(f) }, '再開')
+        ? [el('button', { class: 'small', onclick: () => resume(f) }, '再開'),
+          el('button', { class: 'small', onclick: () => remove(f) }, '消す')]
         : [el('button', { class: 'small', onclick: () => openFixedSheet(f) }, '直す'),
           el('button', { class: 'small', onclick: () => stop(f) }, 'やめる')]));
   return el('section', { class: 'card' },

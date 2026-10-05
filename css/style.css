@@ -154,3 +154,14 @@ h1 { font-size: 20px; margin: 0; }
 .fixed-done { color: var(--plus); }
 .fixed-plan { font-weight: normal; color: var(--sub); font-size: 14px; }
 .fixed-foot { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; font-size: 14px; color: var(--sub); text-align: right; }
+
+/* ---- short screens (iPhone SE: 375×667, less below the status bar in the home-screen app) ----
+   Ver.1.1.1: tighten the input screen so the 記録する button is above the tab bar without scrolling.
+   The keys keep their 44px. */
+@media (max-height: 700px) {
+  .amount-row { height: 50px; }
+  .cat-grid { gap: 4px; }
+  .cat { min-height: 34px; }
+  .chips { margin-top: 4px; }
+  .keypad { gap: 4px; margin-top: 6px; }
+}

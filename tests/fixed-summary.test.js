@@ -53,3 +53,10 @@ test('the planned day is the real payment day of that month', () => {
   assert.equal(fixedSummary([f], [], '2028-02').rows[0].day, 29);
   assert.equal(fixedSummary([f], [], '2027-03').rows[0].day, 31);
 });
+
+test('a deleted fixed cost still shows the months it was paid, and nothing to come', () => {
+  const gone = loan({ doneThrough: '2026-10', hidden: true, deleted: true });
+  assert.deepEqual(fixedSummary([gone], [mark('f-1', '2026-10', 85000)], '2026-10').rows,
+    [{ id: 'f-1', name: '住宅ローン', amount: 85000, done: true, day: null }]);
+  assert.equal(fixedSummary([gone], [mark('f-1', '2026-10', 85000)], '2026-11'), null);
+});

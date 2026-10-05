@@ -7,6 +7,13 @@ const LISTS = ['entries', 'categories', 'methods', 'fixed'];
 const ALL = [...LISTS, 'settings'];
 
 let dbPromise = null;
+let blockedHandler = null;
+
+// Ver.1.1.1: called when an upgrade has to wait for an older screen that still holds the database open.
+// Opening goes on by itself once that screen lets go.
+export function onBlocked(fn) {
+  blockedHandler = fn;
+}
 
 function open() {
   dbPromise ??= new Promise((resolve, reject) => {
@@ -19,6 +26,7 @@ function open() {
       }
       if (e.oldVersion < 2) db.createObjectStore('fixed', { keyPath: 'id' });
     };
+    req.onblocked = () => blockedHandler?.();
     req.onsuccess = () => {
       req.result.onclose = () => { dbPromise = null; };
       // A newer version opened elsewhere: let it upgrade instead of blocking it.

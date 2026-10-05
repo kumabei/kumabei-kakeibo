@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { payDate, sortFixed, findMark, startMonths, newFixed, resumedFixed, fixedRowText } from '../js/fixed.js';
+import { payDate, sortFixed, findMark, startMonths, newFixed, resumedFixed, fixedRowText, deletedFixed, listedFixed } from '../js/fixed.js';
 import { initialCategories, initialMethods } from '../js/logic.js';
 
 test('payDate uses the day, or the last day of a shorter month', () => {
@@ -53,4 +53,19 @@ test('resumedFixed starts again from now and keeps the rest', () => {
 test('fixedRowText', () => {
   const f = newFixed(DRAFT, false, '2026-10-05', 'f-1', 123);
   assert.equal(fixedRowText(f, initialCategories(), initialMethods()), '27日　住宅ローン　85,000円　住居費・カード');
+});
+
+test('deletedFixed stops it and marks it deleted, keeping the rest', () => {
+  const running = newFixed(DRAFT, false, '2026-10-05', 'f-1', 123);
+  const d = deletedFixed({ ...running, hidden: true, doneThrough: '2026-10' });
+  assert.equal(d.hidden, true);
+  assert.equal(d.deleted, true);
+  assert.equal(d.doneThrough, '2026-10');
+  assert.equal(d.name, '住宅ローン');
+});
+
+test('listedFixed leaves out the deleted ones, in the settings order', () => {
+  const list = [{ id: 'a', day: 27, createdAt: 1 }, { id: 'b', day: 5, createdAt: 2, hidden: true, deleted: true },
+    { id: 'c', day: 5, createdAt: 3, hidden: true }];
+  assert.deepEqual(listedFixed(list).map(f => f.id), ['c', 'a']);
 });
