@@ -90,19 +90,37 @@ export function memoHead(memo, n = 12) {
 
 // ---- keypad ----
 
-export const MAX_DIGITS = 8;
+export const MAX_DIGITS = 8; // per number
+export const MAX_EXPR = 20; // the whole expression, so it fits on the amount line
+const OPS = { plus: '+', minus: '-' };
 
-// amountStr holds digits without leading zeros; '' means 0 yen.
+// amountStr holds numbers without leading zeros, joined by + and - (Ver.1.1.2); '' means 0 yen.
 export function applyKey(amountStr, key) {
   if (key === 'clear') return '';
   if (key === 'back') return amountStr.slice(0, -1);
+  if (Object.hasOwn(OPS, key)) {
+    if (amountStr === '') return '';
+    const next = amountStr.replace(/[+-]$/, '') + OPS[key]; // a second operator replaces the first
+    return next.length > MAX_EXPR ? amountStr : next;
+  }
   if (!/^(\d|00)$/.test(key)) return amountStr;
-  const next = (amountStr + key).replace(/^0+/, '');
-  return next.length > MAX_DIGITS ? amountStr : next;
+  const start = Math.max(amountStr.lastIndexOf('+'), amountStr.lastIndexOf('-')) + 1;
+  const number = (amountStr.slice(start) + key).replace(/^0+/, '');
+  const next = amountStr.slice(0, start) + number;
+  return number.length > MAX_DIGITS || next.length > MAX_EXPR ? amountStr : next;
 }
 
+// The result of the expression; a trailing operator is ignored. Can be 0 or less.
 export function amountValue(amountStr) {
-  return amountStr === '' ? 0 : Number(amountStr);
+  return (amountStr.match(/[+-]?\d+/g) ?? []).reduce((sum, n) => sum + Number(n), 0);
+}
+
+export function hasOps(amountStr) {
+  return /[+-]/.test(amountStr);
+}
+
+export function formatExpr(amountStr) {
+  return amountStr.replace(/\d+/g, n => formatNumber(Number(n))).replace(/\+/g, '＋').replace(/-/g, '−');
 }
 
 // ---- initial data, colors and ordering ----

@@ -18,6 +18,7 @@ export const SCENES = {
   backupNudge: { image: 'k07', line: LINES.backupNudge },
   backupDone: { image: 'k02', line: LINES.backupDone },
   missing: { image: 'k08', line: LINES.missing },
+  belowZero: { image: 'k08', line: LINES.belowZero },
   autoRecorded: { image: 'k09', line: LINES.autoRecorded }, // the line is filled in by fixed.js autoRecordLine
 };
 

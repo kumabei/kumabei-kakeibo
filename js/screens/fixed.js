@@ -1,13 +1,13 @@
 // The fixed-cost parts of the screens: telling what was recorded automatically (spec 4-4), and the
 // "毎月の固定費" list in the settings with its add / edit sheet (spec 5-1, 6-1).
 import { state, saveFixed, catchUpFixed } from '../state.js';
-import { todayStr, monthOf, amountValue, applyKey, formatNumber, listWithCurrent, pickDefaultMethod, colorOf } from '../logic.js';
+import { todayStr, monthOf, amountValue, applyKey, listWithCurrent, pickDefaultMethod, colorOf } from '../logic.js';
 import { listedFixed, newFixed, resumedFixed, deletedFixed, fixedRowText, autoRecordLine, askStartedLine } from '../fixed.js';
 import { SCENES, FIXED_ASK_IMAGE } from '../kuma.js';
 import { LINES } from '../lines.js';
 import { el, setChildren, openSheet, closeSheet, showToast, askChoice } from '../ui.js';
 import { currentView } from '../nav.js';
-import { keyButtons, announce } from './input.js';
+import { keyButtons, amountView, missingScene, announce } from './input.js';
 
 // Records the fixed costs that are due and says so: Kumabee on the input screen, a toast elsewhere.
 // Resolves with what was recorded.
@@ -122,7 +122,7 @@ function openFixedSheet(existing) {
     const set = patch => { Object.assign(d, patch); drawBody(); };
     setChildren(body,
       el('div', { class: 'fixed-label' }, '金額'),
-      el('div', { class: 'amount' + (amount === 0 ? ' zero' : '') }, el('span', { class: 'yen' }, '¥'), formatNumber(amount)),
+      amountView(d.amountStr),
       el('div', { class: 'fixed-label' }, '分類'),
       el('div', { class: 'cat-grid' }, cats.map(c => el('button', {
         class: 'cat' + (c.id === d.categoryId ? ' on' : ''),
@@ -140,7 +140,11 @@ function openFixedSheet(existing) {
         keyButtons(k => set({ amountStr: applyKey(d.amountStr, k) })),
         el('button', {
           class: 'record' + (ready ? '' : ' not-ready'),
-          onclick: () => { if (ready) submit(); else showToast('名前・金額・分類・支払い方法・日を入れてね'); },
+          onclick: () => {
+            if (ready) submit();
+            else if (missingScene(d.amountStr) === SCENES.belowZero) showToast(SCENES.belowZero.line);
+            else showToast('名前・金額・分類・支払い方法・日を入れてね');
+          },
         }, existing ? '保存する' : '登録する')));
   }
 

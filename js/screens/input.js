@@ -1,7 +1,7 @@
 // Input screen (the app opens here) and the editor sheet, which reuses the same form parts.
 import { state, addEntry, updateEntry, removeEntry, addCategory, addFixedEntry } from '../state.js';
 import {
-  todayStr, addDays, monthOf, applyKey, amountValue, formatNumber, formatYen, formatDateLabel,
+  todayStr, addDays, monthOf, applyKey, amountValue, hasOps, formatExpr, formatNumber, formatYen, formatDateLabel,
   visibleSorted, listWithCurrent, pickDefaultMethod, expenseOnDate, isFirstRecordToday, colorOf,
 } from '../logic.js';
 import { manualCheck, manualCheckLine, deleteConfirmText } from '../fixed.js';
@@ -10,9 +10,11 @@ import { LINES } from '../lines.js';
 import { el, showToast, openSheet, closeSheet, askText, askChoice } from '../ui.js';
 import { show } from '../nav.js';
 
-// Keypad, 4 per row; the submit button fills the last row next to 0.
-const KEYS = ['7', '8', '9', 'back', '4', '5', '6', 'clear', '1', '2', '3', '00', '0'];
-const KEY_LABELS = { back: '⌫', clear: 'C' };
+// Keypad, 5 per row (Ver.1.1.2, after the calculator る～ちゃん uses). The submit button takes the
+// bottom right 2×2 (CSS places it), so 0 and the wide 00 go under 1 2 3.
+const KEYS = ['7', '8', '9', 'minus', 'clear', '4', '5', '6', 'plus', 'back', '1', '2', '3', '0', '00'];
+const KEY_LABELS = { back: '⌫', clear: 'C', plus: '＋', minus: '−' };
+const LONG_EXPR = 13; // a longer expression is drawn smaller
 const GUARD_MS = 1000;
 const ANNOUNCE_MS = 5000; // how long the auto-record line stays (fixed costs spec 4-4)
 // Fixed costs spec 5-2: the buttons for each state of the month. [value, label]; the first is suggested.
@@ -50,9 +52,26 @@ export function announce(line) {
 // The keypad keys without the submit button. Shared with the fixed-cost sheet.
 export function keyButtons(onKey) {
   return KEYS.map(k => el('button', {
-    class: 'key' + (KEY_LABELS[k] ? ' fn' : ''),
+    class: 'key' + (KEY_LABELS[k] ? ' fn' : '') + (k === '00' ? ' wide' : ''),
     onclick: () => onKey(k),
   }, KEY_LABELS[k] ?? k));
+}
+
+// The amount as typed. With + or -, the expression and its result under it. Shared with the fixed-cost sheet.
+export function amountView(amountStr) {
+  const amount = amountValue(amountStr);
+  const yen = el('span', { class: 'yen' }, '¥');
+  if (!hasOps(amountStr)) return el('div', { class: 'amount' + (amount === 0 ? ' zero' : '') }, yen, formatNumber(amount));
+  const expr = formatExpr(amountStr);
+  return el('div', { class: 'amount calc' + (expr.length > LONG_EXPR ? ' long' : '') },
+    el('div', { class: 'calc-expr' }, yen, expr),
+    el('div', { class: 'calc-result' + (amount <= 0 ? ' minus' : '') },
+      '＝' + (amount < 0 ? '−' : '') + formatNumber(Math.abs(amount))));
+}
+
+// What Kumabee says when the submit button is not ready yet.
+export function missingScene(amountStr) {
+  return hasOps(amountStr) && amountValue(amountStr) <= 0 ? SCENES.belowZero : SCENES.missing;
 }
 
 export function render(root, { entering = false } = {}) {
@@ -78,7 +97,7 @@ export function render(root, { entering = false } = {}) {
     rerender: () => render(root),
     submitLabel: '記録する',
     onSubmit: submitNew,
-    onMissing: () => setKuma(SCENES.missing),
+    onMissing: scene => setKuma(scene),
     kuma: kumaEl,
     todaySpend: expenseOnDate(state.entries, todayStr()),
     bump,
@@ -153,9 +172,7 @@ function buildForm(f, { rerender, submitLabel, onSubmit, onMissing, kuma = null,
       el('button', { class: t === f.type ? 'on' : '', onclick: () => { if (t !== f.type) set({ type: t, categoryId: null }); } }, label))),
     todaySpend === null ? null : el('div', { class: 'today-spend' }, '今日の支出 ', el('b', {}, formatYen(todaySpend))));
 
-  const amountRow = el('div', { class: 'amount-row' },
-    el('div', { class: 'amount' + (amount === 0 ? ' zero' : '') }, el('span', { class: 'yen' }, '¥'), formatNumber(amount)),
-    kuma);
+  const amountRow = el('div', { class: 'amount-row' }, amountView(f.amountStr), kuma);
 
   const grid = el('div', { class: 'cat-grid' },
     cats.map(c => el('button', {
@@ -216,7 +233,7 @@ function buildForm(f, { rerender, submitLabel, onSubmit, onMissing, kuma = null,
       class: 'record' + (ready ? '' : ' not-ready') + (bump ? ' bump' : ''),
       onclick: () => {
         if (Date.now() < busyUntil) return;
-        if (!ready) { onMissing(); return; }
+        if (!ready) { onMissing(missingScene(f.amountStr)); return; }
         busyUntil = Date.now() + GUARD_MS;
         onSubmit();
       },
@@ -266,7 +283,7 @@ export function openEditor(entry) {
       rerender: draw,
       submitLabel: '保存する',
       onSubmit: save,
-      onMissing: () => showToast(SCENES.missing.line, { image: SCENES.missing.image }),
+      onMissing: scene => showToast(scene.line, { image: scene.image }),
     })));
   draw();
 }

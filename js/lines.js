@@ -12,6 +12,7 @@ export const LINES = {
   backupNudge: 'そろそろバックアップしとこ？',
   backupDone: 'ありがとう！安心だね',
   missing: '金額と分類を入れてね',
+  belowZero: '金額が0円以下になってるよ',
   edited: '直しました',
   // Fixed costs. {…} marks are filled in by js/fixed.js.
   autoRecorded: '{names}、自動で記録しておいたよ～！',
