@@ -185,8 +185,11 @@ h1 { font-size: 20px; margin: 0; }
 .cat-row-share { width: 4.6em; text-align: right; color: var(--sub); font-size: 14px; }
 .chevron { color: var(--sub); font-size: 20px; line-height: 1; }
 .as-of { text-align: right; font-size: 13px; color: var(--sub); margin-bottom: 2px; }
-.avg-note { font-weight: normal; font-size: 13px; color: var(--sub); }
+.row span.avg-note { display: block; font-weight: normal; font-size: 13px; color: var(--sub); white-space: nowrap; }
+.row > span:first-child { white-space: nowrap; }
+.row > span:last-child { text-align: right; }
 .bars { width: 100%; height: auto; display: block; }
+.bar-col { touch-action: manipulation; cursor: pointer; }
 .bar-hit { fill: var(--accent); fill-opacity: 0; }
 .bar-col.pressed .bar-hit { fill-opacity: .12; }
 .bar-name { fill: var(--sub); }

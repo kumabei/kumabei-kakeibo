@@ -47,6 +47,23 @@ export function showLabel(slice) {
   return slice.share >= LABEL_MIN_SHARE && textWidth(slice.name, LABEL_FONT) <= arcLength(slice);
 }
 
+// F1: the label is a straight horizontal box, so near 3 and 9 o'clock it runs along the ring's thickness.
+// It must stay inside the SVG and off the center total. OVERLAP_TOLERANCE (px) is how far it may poke into
+// the total's box (a generous estimate). Staying within 0..SIZE is strict: 「家具・家電」 at 50% clips 3px, so it is not drawn.
+export const OVERLAP_TOLERANCE = 4;
+
+export function labelClear(slice, full, totalText) {
+  const [x, y] = labelPoint(slice, full);
+  const w = textWidth(slice.name, LABEL_FONT);
+  const left = x - w / 2, right = x + w / 2, top = y - LABEL_FONT / 2, bottom = y + LABEL_FONT / 2;
+  if (left < 0 || right > SIZE || top < 0 || bottom > SIZE) return false;
+  const size = centerFontSize(totalText);
+  const cw = textWidth(totalText, size);
+  const overlaps = left < C + cw / 2 - OVERLAP_TOLERANCE && right > C - cw / 2 + OVERLAP_TOLERANCE
+    && top < C + size / 2 - OVERLAP_TOLERANCE && bottom > C - size / 2 + OVERLAP_TOLERANCE;
+  return !overlaps;
+}
+
 export function polar(deg, r) {
   const a = ((deg - 90) * Math.PI) / 180;
   return [C + r * Math.cos(a), C + r * Math.sin(a)];
@@ -116,7 +133,8 @@ export function donutChart(rows, colors, total) {
   const shapes = full
     ? [svg('circle', { cx: C, cy: C, r: R_MID, fill: 'none', stroke: colors.get(rows[0].categoryId), 'stroke-width': R_OUT - R_IN })]
     : slices.map(s => svg('path', { d: segmentPath(s.start, s.end), fill: colors.get(s.categoryId), stroke: '#fff', 'stroke-width': 2 }));
-  const labels = slices.filter(showLabel).map(s => {
+  const totalText = formatYen(total);
+  const labels = slices.filter(s => showLabel(s) && labelClear(s, full, totalText)).map(s => {
     const [x, y] = labelPoint(s, full);
     const label = svg('text', {
       x: f(x), y: f(y), 'font-size': LABEL_FONT, fill: labelColor(colors.get(s.categoryId)),
@@ -125,13 +143,12 @@ export function donutChart(rows, colors, total) {
     label.textContent = s.name;
     return label;
   });
-  const totalText = formatYen(total);
   const center = svg('text', {
     x: C, y: C, 'font-size': centerFontSize(totalText), fill: TEXT_DARK,
     'text-anchor': 'middle', 'dominant-baseline': 'central', class: 'donut-total',
   });
   center.textContent = totalText;
-  return svg('svg', { viewBox: `0 0 ${SIZE} ${SIZE}`, class: 'donut', role: 'img' }, ...shapes, ...labels, center);
+  return svg('svg', { viewBox: `0 0 ${SIZE} ${SIZE}`, class: 'donut', role: 'img', 'aria-label': `円グラフ 合計${totalText}` }, ...shapes, ...labels, center);
 }
 
 // values: 12 monthly amounts; onPick(monthIndex 0–11). Each month is one tappable column (bar + name).
@@ -151,5 +168,5 @@ export function barChart(values, color, onPick) {
     for (const t of ['pointerup', 'pointercancel', 'pointerleave']) col.addEventListener(t, () => col.classList.remove('pressed'));
     return col;
   });
-  return svg('svg', { viewBox: `0 0 ${BAR_W} ${BAR_H}`, class: 'bars', role: 'img' }, ...cols);
+  return svg('svg', { viewBox: `0 0 ${BAR_W} ${BAR_H}`, class: 'bars' }, ...cols);
 }

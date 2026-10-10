@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   pieSlices, textWidth, arcLength, showLabel, labelPoint, polar, segmentPath, centerFontSize, labelColor,
-  barHeights, R_MID, BAR_AREA, MIN_BAR, TEXT_DARK, TEXT_LIGHT, SIZE,
+  barHeights, labelClear, R_MID, BAR_AREA, MIN_BAR, TEXT_DARK, TEXT_LIGHT, SIZE,
 } from '../js/chart.js';
 import { categoryColors, hslToHex, hexToHsl } from '../js/stats.js';
 import { COLORS } from '../js/logic.js';
@@ -86,4 +86,18 @@ test('barHeights: the largest month fills the area, 0 has no bar, tiny ones stay
   assert.equal(tall[0], BAR_AREA);
   assert.equal(tall[1], MIN_BAR);
   assert.equal(tall[2], 0);
+});
+
+test('labelClear: the straight label box stays inside the SVG and off the center total (F1)', () => {
+  const at = (name, share, start = 0) => ({ name, share, start, end: start + share * 360 });
+  const total = '234,200円';
+  // 50% from 12 o'clock: slice centre 90° = 3 o'clock, where the box runs along the ring's thickness
+  assert.equal(labelClear(at('イベント・レジャー', 0.5), false, total), false); // clips right, hits the total
+  assert.equal(labelClear(at('お小遣い', 0.5), false, total), true);
+  assert.equal(labelClear(at('ガソリン', 0.5), false, total), true);
+  assert.equal(labelClear(at('家具・家電', 0.5), false, total), false); // 60 wide: right edge 223 > 220, clipped 3px
+  assert.equal(labelClear(at('（分類なし）', 0.4, 0), false, total), false); // centre 72°, clips ~5px
+  assert.equal(labelClear(at('イベント・レジャー', 0.5, 180), false, total), false); // 9 o'clock side
+  assert.equal(labelClear(at('イベント・レジャー', 0.1), false, total), true); // centre 18°, near 12 o'clock
+  assert.equal(labelClear(at('イベント・レジャー', 1), true, total), true); // full ring: 12 o'clock
 });
