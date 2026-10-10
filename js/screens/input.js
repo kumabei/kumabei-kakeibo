@@ -10,10 +10,10 @@ import { LINES } from '../lines.js';
 import { el, showToast, openSheet, closeSheet, askText, askChoice } from '../ui.js';
 import { show } from '../nav.js';
 
-// Keypad, 5 per row (Ver.1.1.2, after the calculator る～ちゃん uses). The submit button takes the
-// bottom right 2×2 (CSS places it), so 0 and the wide 00 go under 1 2 3.
-const KEYS = ['7', '8', '9', 'minus', 'clear', '4', '5', '6', 'plus', 'back', '1', '2', '3', '0', '00'];
-const KEY_LABELS = { back: '⌫', clear: 'C', plus: '＋', minus: '−' };
+// Keypad, 5 per row (Ver.1.1.3, after the calculator る～ちゃん uses). × − ＋ ＝ go down the 4th column;
+// the submit button takes the bottom right 1×2 (CSS places it), so 0, the wide 00 and ＝ go under 1 2 3.
+const KEYS = ['7', '8', '9', 'times', 'clear', '4', '5', '6', 'minus', 'back', '1', '2', '3', 'plus', '0', '00', 'equals'];
+const KEY_LABELS = { back: '⌫', clear: 'C', plus: '＋', minus: '−', times: '×', equals: '＝' };
 const LONG_EXPR = 13; // a longer expression is drawn smaller
 const GUARD_MS = 1000;
 const ANNOUNCE_MS = 5000; // how long the auto-record line stays (fixed costs spec 4-4)
@@ -52,9 +52,19 @@ export function announce(line) {
 // The keypad keys without the submit button. Shared with the fixed-cost sheet.
 export function keyButtons(onKey) {
   return KEYS.map(k => el('button', {
-    class: 'key' + (KEY_LABELS[k] ? ' fn' : '') + (k === '00' ? ' wide' : ''),
+    class: 'key' + (KEY_LABELS[k] ? ' fn' : '') + (k === '00' ? ' key-wide' : ''),
     onclick: () => onKey(k),
   }, KEY_LABELS[k] ?? k));
+}
+
+// The submit button is one key wide: its label goes on two lines (記録 / する).
+export function submitLabelParts(label) {
+  return [label.slice(0, 2), el('br'), label.slice(2)];
+}
+
+// ＝ that cannot turn the expression into its result because it is 0 yen or less.
+export function belowZeroOnEquals(key, amountStr) {
+  return key === 'equals' && hasOps(amountStr) && amountValue(amountStr) <= 0;
 }
 
 // The amount as typed. With + or -, the expression and its result under it. Shared with the fixed-cost sheet.
@@ -228,7 +238,10 @@ function buildForm(f, { rerender, submitLabel, onSubmit, onMissing, kuma = null,
     : null;
 
   const pad = el('div', { class: 'keypad' },
-    keyButtons(k => set({ amountStr: applyKey(f.amountStr, k) })),
+    keyButtons(k => {
+      if (belowZeroOnEquals(k, f.amountStr)) onMissing(SCENES.belowZero);
+      else set({ amountStr: applyKey(f.amountStr, k) });
+    }),
     el('button', {
       class: 'record' + (ready ? '' : ' not-ready') + (bump ? ' bump' : ''),
       onclick: () => {
@@ -237,7 +250,7 @@ function buildForm(f, { rerender, submitLabel, onSubmit, onMissing, kuma = null,
         busyUntil = Date.now() + GUARD_MS;
         onSubmit();
       },
-    }, submitLabel));
+    }, submitLabelParts(submitLabel)));
 
   return el('div', { class: 'entry-form' }, top, amountRow, grid, methods, dates, memo, pad);
 }

@@ -100,3 +100,48 @@ test('formatExpr puts commas in each number and shows full-width operators', () 
   assert.equal(formatExpr('12000-1500+'), '12,000−1,500＋');
   assert.equal(formatExpr('3280'), '3,280');
 });
+
+// Ver.1.1.3: × and ＝ keys (る～ちゃんの要望). × is worked out before + and −, like the iPhone calculator.
+test('times is appended after a number and replaces another operator', () => {
+  assert.equal(applyKey('300', 'times'), '300*');
+  assert.equal(applyKey('300+', 'times'), '300*');
+  assert.equal(applyKey('300*', 'plus'), '300+');
+  assert.equal(applyKey('', 'times'), '');
+});
+
+test('digits after times start a new number; back removes times', () => {
+  assert.equal(applyKey('300*', '3'), '300*3');
+  assert.equal(applyKey('300*', '0'), '300*');
+  assert.equal(applyKey('300*3', '00'), '300*300');
+  assert.equal(applyKey('300*', 'back'), '300');
+  assert.equal(applyKey('1+99999999*99999999', '1'), '1+99999999*99999999');
+});
+
+test('amountValue works out times before plus and minus', () => {
+  assert.equal(amountValue('300*3'), 900);
+  assert.equal(amountValue('500+300*3'), 1400);
+  assert.equal(amountValue('300*3+500'), 1400);
+  assert.equal(amountValue('1000-200*3'), 400);
+  assert.equal(amountValue('2*3*4-4'), 20);
+  assert.equal(amountValue('300*'), 300);
+  assert.equal(amountValue('100-50*3'), -50);
+});
+
+test('equals turns the expression into its result', () => {
+  assert.equal(applyKey('500+300*3', 'equals'), '1400');
+  assert.equal(applyKey('1200+', 'equals'), '1200');
+  assert.equal(applyKey('1400', 'equals'), '1400');
+  assert.equal(applyKey('', 'equals'), '');
+});
+
+test('equals keeps the expression when the result is 0 or less, or longer than 8 digits', () => {
+  assert.equal(applyKey('100-300', 'equals'), '100-300');
+  assert.equal(applyKey('100-100', 'equals'), '100-100');
+  assert.equal(applyKey('99999999+1', 'equals'), '99999999+1');
+  assert.equal(applyKey('99999998+1', 'equals'), '99999999');
+});
+
+test('hasOps and formatExpr know times', () => {
+  assert.equal(hasOps('300*3'), true);
+  assert.equal(formatExpr('1200+300*3'), '1,200＋300×3');
+});

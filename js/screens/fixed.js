@@ -7,7 +7,7 @@ import { SCENES, FIXED_ASK_IMAGE } from '../kuma.js';
 import { LINES } from '../lines.js';
 import { el, setChildren, openSheet, closeSheet, showToast, askChoice } from '../ui.js';
 import { currentView } from '../nav.js';
-import { keyButtons, amountView, missingScene, announce } from './input.js';
+import { keyButtons, amountView, missingScene, announce, submitLabelParts, belowZeroOnEquals } from './input.js';
 
 // Records the fixed costs that are due and says so: Kumabee on the input screen, a toast elsewhere.
 // Resolves with what was recorded.
@@ -137,7 +137,10 @@ function openFixedSheet(existing) {
         el('button', { class: 'day' + (n === d.day ? ' on' : ''), onclick: () => set({ day: n }) }, String(n)))),
       d.day >= 29 ? el('div', { class: 'muted fixed-note' }, 'その日がない月は、月末に記録します') : null,
       el('div', { class: 'keypad' },
-        keyButtons(k => set({ amountStr: applyKey(d.amountStr, k) })),
+        keyButtons(k => {
+          if (belowZeroOnEquals(k, d.amountStr)) showToast(SCENES.belowZero.line);
+          else set({ amountStr: applyKey(d.amountStr, k) });
+        }),
         el('button', {
           class: 'record' + (ready ? '' : ' not-ready'),
           onclick: () => {
@@ -145,7 +148,7 @@ function openFixedSheet(existing) {
             else if (missingScene(d.amountStr) === SCENES.belowZero) showToast(SCENES.belowZero.line);
             else showToast('名前・金額・分類・支払い方法・日を入れてね');
           },
-        }, existing ? '保存する' : '登録する')));
+        }, submitLabelParts(existing ? '保存する' : '登録する'))));
   }
 
   drawBody();
