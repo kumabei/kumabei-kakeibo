@@ -99,7 +99,7 @@ export function categoryYearView(view, act, today) {
     backHead(`${categoryName(view.categoryId, state.categories)}（${TYPE_LABEL[view.type]}）`, `${view.year}年`, act),
     el('div', { class: 'card totals' },
       row('1年の合計', formatYen(total)),
-      el('div', { class: 'row' }, el('span', {}, 'ひと月の平均'),
+      el('div', { class: 'row avg-row' }, el('span', {}, 'ひと月の平均'),
         avg === null ? el('span', {}, '—')
           : el('span', {}, formatYen(avg), el('span', { class: 'avg-note' }, `（${months}か月で割った額）`)))),
     el('div', { class: 'card' }, barChart(series, color, open)),

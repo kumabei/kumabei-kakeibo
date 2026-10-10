@@ -186,8 +186,8 @@ h1 { font-size: 20px; margin: 0; }
 .chevron { color: var(--sub); font-size: 20px; line-height: 1; }
 .as-of { text-align: right; font-size: 13px; color: var(--sub); margin-bottom: 2px; }
 .row span.avg-note { display: block; font-weight: normal; font-size: 13px; color: var(--sub); white-space: nowrap; }
-.row > span:first-child { white-space: nowrap; }
-.row > span:last-child { text-align: right; }
+.row.avg-row > span:first-child { white-space: nowrap; }
+.row.avg-row > span:last-child { text-align: right; }
 .bars { width: 100%; height: auto; display: block; }
 .bar-col { touch-action: manipulation; cursor: pointer; }
 .bar-hit { fill: var(--accent); fill-opacity: 0; }
