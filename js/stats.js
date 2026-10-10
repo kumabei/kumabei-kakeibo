@@ -1,9 +1,10 @@
 // Totals for the reports (Ver.1.2.0 spec 9, 10). Pure: no DOM, no IndexedDB. A period is 'YYYY-MM' (a month)
 // or 'YYYY' (a year), so every function here also works for any year (for a later year-on-year view).
-import { allSorted, monthOf, sortNewestFirst } from './logic.js';
+import { COLORS, allSorted, monthOf, sortNewestFirst } from './logic.js';
 
 export const NO_CATEGORY = 'none'; // the id used for （分類なし）: entries whose category is not found
 export const NO_CATEGORY_NAME = '（分類なし）';
+export const SHADE_DARKEN = 0.22; // how much darker (HSL lightness) the first category of a color group is
 
 const inPeriod = (e, period) => e.date.startsWith(period + '-');
 
@@ -99,4 +100,58 @@ export function averageMonths(entries, year, today) {
 
 export function monthlyAverage(total, months) {
   return months === 0 ? null : Math.round(total / months);
+}
+
+// ---- colors (spec 10) ----
+
+export function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function rgbToHex(rgb) {
+  return '#' + rgb.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+}
+
+export function hexToHsl(hex) {
+  const [r, g, b] = hexToRgb(hex).map(v => v / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0) return [0, 0, l];
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h = max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [h * 60, s, l];
+}
+
+export function hslToHex([h, s, l]) {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x]
+    : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return rgbToHex([r + m, g + m, b + m].map(v => v * 255));
+}
+
+// Spec 10: id → chart color. Within a color group (settings order, hidden ones counted), the first is
+// SHADE_DARKEN darker in lightness and the last is the group's strong color, in equal steps.
+export function categoryColors(categories, darken = SHADE_DARKEN) {
+  const groups = new Map();
+  for (const c of allSorted(categories)) {
+    const key = COLORS[c.color] ? c.color : 'other';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(c.id);
+  }
+  const out = new Map();
+  for (const [key, ids] of groups) {
+    const [h, s, l] = hexToHsl(COLORS[key].strong);
+    ids.forEach((id, i) => {
+      const steps = ids.length - 1;
+      const drop = steps === 0 ? 0 : darken * (steps - i) / steps;
+      out.set(id, drop === 0 ? COLORS[key].strong : hslToHex([h, s, Math.max(0, l - drop)]));
+    });
+  }
+  out.set(NO_CATEGORY, COLORS.other.strong);
+  return out;
 }
