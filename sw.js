@@ -1,5 +1,5 @@
 // Cache the app shell so the app opens offline. Bump VERSION (here and in js/version.js) on every release.
-const VERSION = '1.1.3';
+const VERSION = '1.2.0';
 const CACHE = 'kumabei-kakeibo-' + VERSION;
 // Kept JSON-compatible (double quotes, no trailing comma): tests/sw.test.js parses this list.
 const FILES = [
