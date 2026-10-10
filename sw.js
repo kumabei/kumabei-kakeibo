@@ -6,7 +6,7 @@ const FILES = [
   "./", "index.html", "manifest.json", "icon-180.png", "icon-512.png",
   "css/style.css",
   "js/app.js", "js/db.js", "js/state.js", "js/nav.js", "js/ui.js", "js/logic.js", "js/kuma.js",
-  "js/lines.js", "js/version.js", "js/backup.js", "js/fixed.js", "js/stats.js", "js/chart.js",
+  "js/lines.js", "js/version.js", "js/backup.js", "js/fixed.js", "js/stats.js", "js/chart.js", "js/report-nav.js",
   "js/screens/input.js", "js/screens/home.js", "js/screens/calendar.js", "js/screens/history.js",
   "js/screens/settings.js", "js/screens/fixed.js",
   "img/kuma/k01.png", "img/kuma/k02.png", "img/kuma/k06.png", "img/kuma/k07.png", "img/kuma/k08.png",
