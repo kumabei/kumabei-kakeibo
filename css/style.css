@@ -172,3 +172,25 @@ h1 { font-size: 20px; margin: 0; }
   .chips { margin-top: 4px; }
   .keypad { gap: 4px; margin-top: 6px; }
 }
+
+/* ---- reports on the home screen (Ver.1.2.0) ---- */
+.span-seg { max-width: none; margin: 10px 0 0; }
+.report-seg { max-width: none; margin: 10px 0 0; }
+.donut-wrap { display: flex; justify-content: center; margin-bottom: 6px; }
+.donut { width: 220px; height: 220px; }
+.donut-label, .donut-total { font-weight: bold; font-family: -apple-system, "Hiragino Sans", sans-serif; }
+.cat-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 2px; border-top: 1px solid #f6e8ec; text-align: left; }
+.cat-row-name { flex: 1; min-width: 0; }
+.cat-row-amount { font-weight: bold; }
+.cat-row-share { width: 4.6em; text-align: right; color: var(--sub); font-size: 14px; }
+.chevron { color: var(--sub); font-size: 20px; line-height: 1; }
+.as-of { text-align: right; font-size: 13px; color: var(--sub); margin-bottom: 2px; }
+.avg-note { font-weight: normal; font-size: 13px; color: var(--sub); }
+.bars { width: 100%; height: auto; display: block; }
+.bar-hit { fill: var(--accent); fill-opacity: 0; }
+.bar-col.pressed .bar-hit { fill-opacity: .12; }
+.bar-name { fill: var(--sub); }
+.report-head { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.report-title { font-size: 19px; }
+.report-sub { color: var(--sub); }
+.report-empty { margin: 16px 4px; }
