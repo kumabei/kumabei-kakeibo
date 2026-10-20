@@ -58,6 +58,11 @@ test('lineChars: every character Kumabee can say, the digits and the extra text,
   for (const line of Object.values(LINES)) {
     for (const ch of line.replace(/\{\w+\}/g, '')) assert.ok(chars.includes(ch), `missing: ${ch}`);
   }
-  for (const ch of '0123456789日住宅ローンWi-Fi') assert.ok(chars.includes(ch), `missing: ${ch}`);
+  for (const ch of '0123456789,日住宅ローンWi-Fi') assert.ok(chars.includes(ch), `missing: ${ch}`);
   assert.ok(!chars.includes('{'), 'the marks are not characters to load');
+});
+
+test('kept: Kumabee keeps the typed amount (Ver.1.3.0 spec 5-1)', () => {
+  assert.deepEqual(SCENES.kept, { image: 'k16', line: '{amount}円はとっておいたよ' });
+  assert.equal(LINES.missingAmount, '金額を入れてね');
 });

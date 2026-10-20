@@ -40,3 +40,12 @@ test('categoryColors: equal steps in a big group; hiding does not move the other
   // an unknown color key falls back to the 'other' group
   assert.equal(categoryColors([C('z', 'expense', 'z', 0, 'nope')]).get('z'), COLORS.other.strong);
 });
+
+test('every color group has a dark ink for pictures on white (Ver.1.3.0 spec 10)', () => {
+  const expected = {
+    food: '#2e7d3a', outing: '#b85a00', living: '#1f5fa8', family: '#b8195a', move: '#4f4f4f',
+    medical: '#c42b2b', monthly: '#6a3fa0', other: '#7a5a2a', income: '#866800',
+  };
+  for (const [group, ink] of Object.entries(expected)) assert.equal(COLORS[group].ink, ink, group);
+  assert.deepEqual(Object.keys(COLORS).sort(), Object.keys(expected).sort());
+});

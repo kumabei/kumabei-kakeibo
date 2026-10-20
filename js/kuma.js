@@ -19,6 +19,7 @@ export const SCENES = {
   backupDone: { image: 'k02', line: LINES.backupDone },
   missing: { image: 'k08', line: LINES.missing },
   belowZero: { image: 'k08', line: LINES.belowZero },
+  kept: { image: 'k16', line: LINES.kept }, // the amount is filled in by screens/input.js
   autoRecorded: { image: 'k09', line: LINES.autoRecorded }, // the line is filled in by fixed.js autoRecordLine
 };
 
@@ -55,11 +56,11 @@ export function imageSrc(key) {
   return `img/kuma/${key}.png`;
 }
 
-// Unique characters of everything Kumabee says ({…} marks left out), the digits and 日 that fill them, and
+// Unique characters of everything Kumabee says ({…} marks left out), the digits, the comma and 日 that fill them, and
 // `extra` (the fixed-cost names), in first-seen order. Used to build the Google Fonts `text=` subset
 // so only the characters actually needed are downloaded.
 export function lineChars(extra = '') {
-  const text = Object.values(LINES).map(line => line.replace(/\{\w+\}/g, '')).join('') + '0123456789日' + extra;
+  const text = Object.values(LINES).map(line => line.replace(/\{\w+\}/g, '')).join('') + '0123456789,日' + extra;
   return [...new Set(text)].join('');
 }
 

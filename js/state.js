@@ -73,9 +73,12 @@ export async function saveItem(storeName, item) {
   return item;
 }
 
-export function addCategory(type, name) {
+// icon: a picture name from js/icons.js, or null to leave it to iconOf (Ver.1.3.0 spec 6-1).
+export function addCategory(type, name, icon = null) {
   const order = nextOrder(state.categories.filter(c => c.type === type));
-  return saveItem('categories', { id: `c-${crypto.randomUUID()}`, type, name, order, hidden: false, color: newCategoryColor(type) });
+  return saveItem('categories', {
+    id: `c-${crypto.randomUUID()}`, type, name, order, hidden: false, color: newCategoryColor(type), ...(icon ? { icon } : {}),
+  });
 }
 
 export function addMethod(name) {

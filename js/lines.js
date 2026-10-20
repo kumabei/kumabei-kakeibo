@@ -13,6 +13,9 @@ export const LINES = {
   backupDone: 'ありがとう！安心だね',
   missing: '金額と分類を入れてね',
   belowZero: '金額が0円以下になってるよ',
+  // Ver.1.3.0 (big input). {amount} is filled in by screens/input.js.
+  kept: '{amount}円はとっておいたよ',
+  missingAmount: '金額を入れてね',
   edited: '直しました',
   // Fixed costs. {…} marks are filled in by js/fixed.js.
   autoRecorded: '{names}、自動で記録しておいたよ～！',

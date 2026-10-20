@@ -179,3 +179,12 @@ test('dates that cannot be are rejected; real ones (Feb 29 in a leap year) pass'
     assert.equal(parseBackup(JSON.stringify(buildBackup({ ...data(), entries: [entry(3, { date })] }, NOW))).ok, true, date);
   }
 });
+
+test('a category picture (Ver.1.3.0) goes through a backup unchanged', () => {
+  const d = data();
+  d.categories = d.categories.map(c => (c.id === 'e05' ? { ...c, icon: 'heart' } : c));
+  const r = parseBackup(JSON.stringify(buildBackup(d, NOW)));
+  assert.equal(r.ok, true);
+  assert.equal(r.data.categories.find(c => c.id === 'e05').icon, 'heart');
+  assert.equal(r.data.categories.find(c => c.id === 'e01').icon, undefined);
+});

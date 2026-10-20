@@ -136,17 +136,18 @@ export function formatExpr(amountStr) {
 
 export const SCHEMA_VERSION = 2;
 
-// Pastel colors per group of categories (spec 5). bg = button, strong = selected button and dots.
+// Pastel colors per group of categories (spec 5). bg = button, strong = selected button and dots,
+// ink = pictures and their frames on white (Ver.1.3.0 spec 10).
 export const COLORS = {
-  food:    { bg: '#dff3e0', strong: '#9fd4a3' },
-  outing:  { bg: '#ffe6cc', strong: '#f5b77a' },
-  living:  { bg: '#dcebfa', strong: '#93bde8' },
-  family:  { bg: '#fde0ea', strong: '#f2a3bd' },
-  move:    { bg: '#ececec', strong: '#b5b5b5' },
-  medical: { bg: '#fbd9d9', strong: '#ee9a9a' },
-  monthly: { bg: '#ebe0f5', strong: '#c0a4e0' },
-  other:   { bg: '#f3ebdd', strong: '#d4bf98' },
-  income:  { bg: '#fff4c2', strong: '#f0d468' },
+  food:    { bg: '#dff3e0', strong: '#9fd4a3', ink: '#2e7d3a' },
+  outing:  { bg: '#ffe6cc', strong: '#f5b77a', ink: '#b85a00' },
+  living:  { bg: '#dcebfa', strong: '#93bde8', ink: '#1f5fa8' },
+  family:  { bg: '#fde0ea', strong: '#f2a3bd', ink: '#b8195a' },
+  move:    { bg: '#ececec', strong: '#b5b5b5', ink: '#4f4f4f' },
+  medical: { bg: '#fbd9d9', strong: '#ee9a9a', ink: '#c42b2b' },
+  monthly: { bg: '#ebe0f5', strong: '#c0a4e0', ink: '#6a3fa0' },
+  other:   { bg: '#f3ebdd', strong: '#d4bf98', ink: '#7a5a2a' },
+  income:  { bg: '#fff4c2', strong: '#f0d468', ink: '#866800' },
 };
 
 const EXPENSE_DEFAULTS = [
