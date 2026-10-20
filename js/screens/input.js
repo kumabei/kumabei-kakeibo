@@ -10,7 +10,7 @@ import { manualCheck, manualCheckLine, deleteConfirmText } from '../fixed.js';
 import { SCENES, FIXED_ASK_IMAGE, recordReaction, renderKuma } from '../kuma.js';
 import { LINES } from '../lines.js';
 import { iconOf, iconSvg } from '../icons.js';
-import { el, setChildren, showToast, openSheet, closeSheet, askText, askChoice, askIcon } from '../ui.js';
+import { el, setChildren, showToast, hideToast, openSheet, closeSheet, askText, askChoice, askIcon } from '../ui.js';
 import { show } from '../nav.js';
 import {
   typeSeg, catGrid, payRow, amountBox, keypad, whenRow, changePanel, amountWarning, belowZeroOnEquals,
@@ -56,11 +56,11 @@ export function announce(line) {
 
 // The rows under the category, shared with the editor: date and memo, the payment, then the amount and
 // the keys, or the date-and-memo panel in their place (spec 5-2 to 5-5).
-function entryBody(f, { rerender, submitLabel, onSubmit }) {
+function entryBody(f, { rerender, submitLabel, onSubmit, container }) {
   const set = patch => { Object.assign(f, patch); rerender(); };
   const when = whenRow(f, focusMemo => {
     set({ panel: 'change' });
-    if (focusMemo) document.querySelector('.change-panel .big-memo')?.focus(); // inside the tap, so iOS shows the keyboard
+    if (focusMemo) container().querySelector('.change-panel .big-memo')?.focus(); // inside the tap, so iOS shows the keyboard
   });
   if (f.panel === 'change') return [when, changePanel(f, () => set({ panel: 'keys' }))];
   const shake = f.shake;
@@ -108,7 +108,7 @@ export function render(root, { entering = false } = {}) {
   if (!cat) form.categoryId = null;
   const set = patch => { Object.assign(form, patch); render(root); };
   const addIncome = form.type === 'income' && cats.length === 0
-    ? addIncomeButton(id => { sheetOpening = true; set({ categoryId: id, panel: 'keys', warning: null }); })
+    ? addIncomeButton(id => { hideToast(); sheetOpening = true; set({ categoryId: id, panel: 'keys', warning: null }); })
     : null;
   setChildren(root,
     el('div', { class: 'input-head' },
@@ -116,6 +116,7 @@ export function render(root, { entering = false } = {}) {
       el('div', { class: 'kuma-row' }, kumaEl,
         el('div', { class: 'today-spend' }, el('small', {}, '今日の支出'), el('b', {}, formatYen(expenseOnDate(state.entries, today)))))),
     catGrid(cats, form.categoryId, id => {
+      hideToast(); // the record toast must not sit over the next sheet's keys
       sheetOpening = true;
       set({ categoryId: id, panel: 'keys', warning: null });
     }, addIncome),
@@ -133,7 +134,7 @@ function calcSheet(cat) {
       el('div', { class: 'calc-head' },
         el('div', { class: 'calc-cat', style: `--ink:${colorOf(cat).ink}` }, iconSvg(iconOf(cat)), el('span', {}, cat.name)),
         el('button', { class: 'quit', onclick: quit }, iconSvg('x'), 'やめる')),
-      entryBody(form, { rerender: () => render(rootEl), submitLabel: '記録する', onSubmit: submitNew })),
+      entryBody(form, { rerender: () => render(rootEl), container: () => rootEl, submitLabel: '記録する', onSubmit: submitNew })),
   ];
 }
 
@@ -261,7 +262,7 @@ export function openEditor(entry) {
           f.type === 'income' && cats.length === 0 ? addIncomeButton(id => set({ categoryId: id, panel: 'keys' })) : null)]
       : [el('button', { class: 'cat-change', style: `--ink:${colorOf(cat).ink}`, onclick: () => set({ panel: 'cats' }) },
         iconSvg(iconOf(cat)), el('span', { class: 'cat-change-name' }, cat.name), el('span', { class: 'cat-change-go' }, '変える ›')),
-      ...entryBody(f, { rerender: draw, submitLabel: '保存する', onSubmit: save })];
+      ...entryBody(f, { rerender: draw, container: () => document.getElementById('sheet'), submitLabel: '保存する', onSubmit: save })];
     openSheet(el('div', { class: 'editor' },
       el('div', { class: 'sheet-head' },
         el('button', { class: 'link', onclick: closeSheet }, '閉じる'),
