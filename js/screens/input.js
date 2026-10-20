@@ -108,7 +108,7 @@ export function render(root, { entering = false } = {}) {
   if (!cat) form.categoryId = null;
   const set = patch => { Object.assign(form, patch); render(root); };
   const addIncome = form.type === 'income' && cats.length === 0
-    ? el('button', { class: 'big-cat cat-add', onclick: () => addIncomeCategory(set) }, '＋ 分類を追加')
+    ? addIncomeButton(id => { sheetOpening = true; set({ categoryId: id, panel: 'keys', warning: null }); })
     : null;
   setChildren(root,
     el('div', { class: 'input-head' },
@@ -145,12 +145,16 @@ function quit() {
   if (kept > 0) setKuma({ ...SCENES.kept, line: SCENES.kept.line.replace('{amount}', formatNumber(kept)) }, KEPT_MS);
 }
 
-async function addIncomeCategory(set) {
+// The "＋ 分類を追加" button shown in place of the grid when there is no income category (input screen and editor).
+function addIncomeButton(onAdded) {
+  return el('button', { class: 'big-cat cat-add', onclick: () => addIncomeCategory(onAdded) }, '＋ 分類を追加');
+}
+
+async function addIncomeCategory(onAdded) {
   const name = await askText('収入の分類の名前を入れてね'); // first, inside the tap, so iOS shows the keyboard
   if (!name) return;
   try {
-    sheetOpening = true;
-    set({ categoryId: (await addCategory('income', name)).id, panel: 'keys', warning: null });
+    onAdded((await addCategory('income', name)).id);
   } catch (e) {
     showToast('保存できませんでした：' + e.message);
   }
@@ -252,7 +256,8 @@ export function openEditor(entry) {
     const set = patch => { Object.assign(f, patch); draw(); };
     const body = f.panel === 'cats'
       ? [el('div', { class: 'panel-label' }, '分類をえらんでね'),
-        catGrid(cats, f.categoryId, id => set({ categoryId: id, panel: 'keys' }))]
+        catGrid(cats, f.categoryId, id => set({ categoryId: id, panel: 'keys' }),
+          f.type === 'income' && cats.length === 0 ? addIncomeButton(id => set({ categoryId: id, panel: 'keys' })) : null)]
       : [el('button', { class: 'cat-change', style: `--ink:${colorOf(cat).ink}`, onclick: () => set({ panel: 'cats' }) },
         iconSvg(iconOf(cat)), el('span', { class: 'cat-change-name' }, cat.name), el('span', { class: 'cat-change-go' }, '変える ›')),
       ...entryBody(f, { rerender: draw, submitLabel: '保存する', onSubmit: save })];
