@@ -12,4 +12,5 @@
 - 手元で動かす：`python -m http.server 8123` を実行し、http://localhost:8123/ を開く
 - くまべえ画像の作り直し：`python tools/make_kuma_images.py <くまべえスタンプのフォルダ> <家族スタンプのフォルダ> --sheet preview.png`
   （Pillow・numpy・scipy が必要）
+- 分類の絵の作り直し：`node tools/make_icons.mjs`（ネットにつないで実行。絵は Tabler Icons 3.19.0、MITライセンス。文は `js/icon-paths.js` の先頭）
 - リリース：`js/version.js` と `sw.js` の VERSION を同じ値に上げる（テストが一致を確かめる）
