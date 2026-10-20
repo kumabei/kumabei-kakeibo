@@ -1,22 +1,25 @@
-// Input screen (the app opens here) and the editor sheet, which reuses the same form parts.
+// Input screen (the app opens here) and the editor sheet. Ver.1.3.0 (big input spec): the category is
+// picked first from big picture buttons, then the calculator sheet slides up (spec 3-5). The editor
+// uses the same parts (spec 7).
 import { state, addEntry, updateEntry, removeEntry, addCategory, addFixedEntry } from '../state.js';
 import {
-  todayStr, addDays, monthOf, applyKey, amountValue, hasOps, formatExpr, formatNumber, formatYen, formatDateLabel,
+  todayStr, monthOf, applyKey, amountValue, formatNumber, formatYen,
   visibleSorted, listWithCurrent, pickDefaultMethod, expenseOnDate, isFirstRecordToday, colorOf,
 } from '../logic.js';
 import { manualCheck, manualCheckLine, deleteConfirmText } from '../fixed.js';
 import { SCENES, FIXED_ASK_IMAGE, recordReaction, renderKuma } from '../kuma.js';
 import { LINES } from '../lines.js';
-import { el, showToast, openSheet, closeSheet, askText, askChoice } from '../ui.js';
+import { iconOf, iconSvg } from '../icons.js';
+import { el, setChildren, showToast, openSheet, closeSheet, askText, askChoice } from '../ui.js';
 import { show } from '../nav.js';
+import {
+  typeSeg, catGrid, payRow, amountBox, keypad, whenRow, changePanel, amountWarning, belowZeroOnEquals,
+} from './entry-parts.js';
 
-// Keypad, 5 per row (Ver.1.1.3, after the calculator る～ちゃん uses). × − ＋ ＝ go down the 4th column;
-// the submit button takes the bottom right 1×2 (CSS places it), so 0, the wide 00 and ＝ go under 1 2 3.
-const KEYS = ['7', '8', '9', 'times', 'clear', '4', '5', '6', 'minus', 'back', '1', '2', '3', 'plus', '0', '00', 'equals'];
-const KEY_LABELS = { back: '⌫', clear: 'C', plus: '＋', minus: '−', times: '×', equals: '＝' };
-const LONG_EXPR = 13; // a longer expression is drawn smaller
 const GUARD_MS = 1000;
 const ANNOUNCE_MS = 5000; // how long the auto-record line stays (fixed costs spec 4-4)
+const KEPT_MS = 5000; // how long "…円はとっておいたよ" stays (spec 5-1)
+const RECORDED_MS = 6000; // the "…を記録しました［取り消す］" toast (spec 5-6)
 // Fixed costs spec 5-2: the buttons for each state of the month. [value, label]; the first is suggested.
 const FIXED_CHOICES = {
   new: [['fixed', '固定費の分として記録'], ['normal', '別のものとして記録'], ['cancel', 'やめる']],
@@ -24,22 +27,24 @@ const FIXED_CHOICES = {
   recorded: [['normal', '入れる'], ['cancel', 'やめる']],
 };
 
-let form = null; // the new-entry form; kept across re-renders
+let form = null; // the new-entry form; kept across re-renders. A categoryId means the sheet is open.
 let formDay = null; // the day form.date was defaulted to (blankForm), so an overnight resume can catch up
 let rootEl = null;
 let busyUntil = 0; // taps on the submit button are ignored until then (double-tap guard)
-let bumpNext = false; // play the small bump on the next drawn submit button
+let sheetOpening = false; // slide the sheet up when it opens, not on every key
 let firstShow = true;
 let pending = null; // an auto-record line waiting for the input screen to be drawn
 const kumaEl = el('div', { class: 'kuma kuma-input' });
 
+// panel: 'keys' (amount and keys), 'change' (date and memo) or, in the editor only, 'cats'.
+// warning: what the amount box says instead of saving; shake: shake it once on the next draw.
 function blankForm(type, methodId) {
   formDay = todayStr();
-  return { type, amountStr: '', categoryId: null, methodId, date: formDay, memo: '', memoOpen: false };
+  return { type, amountStr: '', categoryId: null, methodId, date: formDay, memo: '', panel: 'keys', warning: null, shake: false };
 }
 
-function setKuma(scene) {
-  renderKuma(kumaEl, { ...scene, transient: true });
+function setKuma(scene, ms) {
+  renderKuma(kumaEl, { ...scene, transient: true, ms });
 }
 
 // Fixed costs spec 4-4: Kumabee tells what was recorded automatically, instead of "welcome".
@@ -49,39 +54,36 @@ export function announce(line) {
   else pending = scene;
 }
 
-// The keypad keys without the submit button. Shared with the fixed-cost sheet.
-export function keyButtons(onKey) {
-  return KEYS.map(k => el('button', {
-    class: 'key' + (KEY_LABELS[k] ? ' fn' : '') + (k === '00' ? ' key-wide' : ''),
-    onclick: () => onKey(k),
-  }, KEY_LABELS[k] ?? k));
-}
-
-// The submit button is one key wide: its label goes on two lines (記録 / する).
-export function submitLabelParts(label) {
-  return [label.slice(0, 2), el('br'), label.slice(2)];
-}
-
-// ＝ that cannot turn the expression into its result because it is 0 yen or less.
-export function belowZeroOnEquals(key, amountStr) {
-  return key === 'equals' && hasOps(amountStr) && amountValue(amountStr) <= 0;
-}
-
-// The amount as typed. With + or -, the expression and its result under it. Shared with the fixed-cost sheet.
-export function amountView(amountStr) {
-  const amount = amountValue(amountStr);
-  const yen = el('span', { class: 'yen' }, '¥');
-  if (!hasOps(amountStr)) return el('div', { class: 'amount' + (amount === 0 ? ' zero' : '') }, yen, formatNumber(amount));
-  const expr = formatExpr(amountStr);
-  return el('div', { class: 'amount calc' + (expr.length > LONG_EXPR ? ' long' : '') },
-    el('div', { class: 'calc-expr' }, yen, expr),
-    el('div', { class: 'calc-result' + (amount <= 0 ? ' minus' : '') },
-      '＝' + (amount < 0 ? '−' : '') + formatNumber(Math.abs(amount))));
-}
-
-// What Kumabee says when the submit button is not ready yet.
-export function missingScene(amountStr) {
-  return hasOps(amountStr) && amountValue(amountStr) <= 0 ? SCENES.belowZero : SCENES.missing;
+// The rows under the category, shared with the editor: date and memo, the payment, then the amount and
+// the keys, or the date-and-memo panel in their place (spec 5-2 to 5-5).
+function entryBody(f, { rerender, submitLabel, onSubmit }) {
+  const set = patch => { Object.assign(f, patch); rerender(); };
+  const when = whenRow(f, focusMemo => {
+    set({ panel: 'change' });
+    if (focusMemo) document.querySelector('.change-panel .big-memo')?.focus(); // inside the tap, so iOS shows the keyboard
+  });
+  if (f.panel === 'change') return [when, changePanel(f, () => set({ panel: 'keys' }))];
+  const shake = f.shake;
+  f.shake = false;
+  return [
+    when,
+    f.type === 'expense' ? payRow(listWithCurrent(state.methods, f.methodId), f.methodId, id => set({ methodId: id })) : null,
+    amountBox(f.amountStr, f.warning, shake),
+    keypad(k => {
+      if (belowZeroOnEquals(k, f.amountStr)) set({ warning: LINES.belowZero, shake: true });
+      else set({ amountStr: applyKey(f.amountStr, k), warning: null });
+    }, {
+      label: submitLabel,
+      ready: amountValue(f.amountStr) > 0,
+      onSubmit: () => {
+        if (Date.now() < busyUntil) return;
+        const warning = amountWarning(f.amountStr);
+        if (warning) { set({ warning, shake: true }); return; }
+        busyUntil = Date.now() + GUARD_MS;
+        onSubmit();
+      },
+    }),
+  ];
 }
 
 export function render(root, { entering = false } = {}) {
@@ -101,17 +103,57 @@ export function render(root, { entering = false } = {}) {
     pending = null;
     firstShow = false;
   }
-  const bump = bumpNext;
-  bumpNext = false;
-  root.replaceChildren(buildForm(form, {
-    rerender: () => render(root),
-    submitLabel: '記録する',
-    onSubmit: submitNew,
-    onMissing: scene => setKuma(scene),
-    kuma: kumaEl,
-    todaySpend: expenseOnDate(state.entries, todayStr()),
-    bump,
-  }));
+  const cats = visibleSorted(state.categories.filter(c => c.type === form.type));
+  const cat = state.categories.find(c => c.id === form.categoryId && c.type === form.type);
+  if (!cat) form.categoryId = null;
+  const set = patch => { Object.assign(form, patch); render(root); };
+  const addIncome = form.type === 'income' && cats.length === 0
+    ? el('button', { class: 'big-cat cat-add', onclick: () => addIncomeCategory(set) }, '＋ 分類を追加')
+    : null;
+  setChildren(root,
+    el('div', { class: 'input-head' },
+      typeSeg(form.type, t => set({ type: t, categoryId: null })),
+      el('div', { class: 'kuma-row' }, kumaEl,
+        el('div', { class: 'today-spend' }, el('small', {}, '今日の支出'), el('b', {}, formatYen(expenseOnDate(state.entries, today)))))),
+    catGrid(cats, form.categoryId, id => {
+      sheetOpening = true;
+      set({ categoryId: id, panel: 'keys', warning: null });
+    }, addIncome),
+    cats.length ? el('p', { class: 'cat-hint' }, '並び順は、設定の画面で入れかえられます') : null,
+    cat ? calcSheet(cat) : null);
+}
+
+// The calculator sheet (spec 5). The dim layer under it takes the taps meant for the screen behind (spec 5-1).
+function calcSheet(cat) {
+  const opening = sheetOpening;
+  sheetOpening = false;
+  return [
+    el('div', { class: 'calc-dim' }),
+    el('section', { class: 'calc-sheet' + (opening ? ' opening' : ''), 'aria-label': '金額を入れる' },
+      el('div', { class: 'calc-head' },
+        el('div', { class: 'calc-cat', style: `--ink:${colorOf(cat).ink}` }, iconSvg(iconOf(cat)), el('span', {}, cat.name)),
+        el('button', { class: 'quit', onclick: quit }, iconSvg('x'), 'やめる')),
+      entryBody(form, { rerender: () => render(rootEl), submitLabel: '記録する', onSubmit: submitNew })),
+  ];
+}
+
+// Spec 5-1: close the sheet; the amount, date, payment and memo stay for the next category.
+function quit() {
+  const kept = amountValue(form.amountStr);
+  Object.assign(form, { categoryId: null, panel: 'keys', warning: null });
+  render(rootEl);
+  if (kept > 0) setKuma({ ...SCENES.kept, line: SCENES.kept.line.replace('{amount}', formatNumber(kept)) }, KEPT_MS);
+}
+
+async function addIncomeCategory(set) {
+  const name = await askText('収入の分類の名前を入れてね'); // first, inside the tap, so iOS shows the keyboard
+  if (!name) return;
+  try {
+    sheetOpening = true;
+    set({ categoryId: (await addCategory('income', name)).id, panel: 'keys', warning: null });
+  } catch (e) {
+    showToast('保存できませんでした：' + e.message);
+  }
 }
 
 async function submitNew() {
@@ -125,7 +167,7 @@ async function submitNew() {
   const choice = check
     ? await askChoice(FIXED_ASK_IMAGE, manualCheckLine(check, monthOf(todayStr())), FIXED_CHOICES[check.kind])
     : 'normal';
-  if (choice === 'cancel') { // back to the form, with what was typed
+  if (choice === 'cancel') { // back to the sheet, with what was typed
     busyUntil = 0;
     return;
   }
@@ -139,18 +181,18 @@ async function submitNew() {
     return;
   }
   setKuma(recordReaction(entry, isFirstRecordToday(state.entries, entry)));
-  form = blankForm(f.type, f.methodId);
-  bumpNext = true;
+  form = blankForm(f.type, f.methodId); // spec 5-6: the date goes back to today, the payment stays
   if (rootEl) render(rootEl);
   const cat = state.categories.find(c => c.id === entry.categoryId);
   showToast(`${cat?.name ?? ''} ${formatYen(entry.amount)}を記録しました`, {
     actionLabel: '取り消す',
     onAction: () => undo(entry),
+    ms: RECORDED_MS,
   });
 }
 
-// Undo: delete the entry. If the form is still untouched, put its values back so a typo is one
-// key away; otherwise leave whatever the user has started typing alone and just say it's gone.
+// Spec 5-7: undo deletes the entry. If the sheet is closed and nothing is typed, the sheet opens again
+// with the entry's values, so a typo is one key away; otherwise just say it's gone.
 async function undo(entry) {
   try {
     await removeEntry(entry.id);
@@ -158,11 +200,12 @@ async function undo(entry) {
     showToast('消せませんでした：' + e.message);
     return;
   }
-  if (form.amountStr === '' && form.categoryId === null) {
+  if (form.categoryId === null && form.amountStr === '') {
     form = {
-      type: entry.type, amountStr: String(entry.amount), categoryId: entry.categoryId,
-      methodId: entry.methodId ?? form.methodId, date: entry.date, memo: entry.memo, memoOpen: entry.memo !== '',
+      ...blankForm(entry.type, entry.methodId ?? form.methodId),
+      amountStr: String(entry.amount), categoryId: entry.categoryId, date: entry.date, memo: entry.memo,
     };
+    sheetOpening = true;
   } else {
     const cat = state.categories.find(c => c.id === entry.categoryId);
     showToast(`${cat?.name ?? ''} ${formatYen(entry.amount)}を取り消しました`);
@@ -170,97 +213,12 @@ async function undo(entry) {
   show('input');
 }
 
-// Builds the entry form for `f` (mutated in place). Shared by the input screen and the editor sheet.
-function buildForm(f, { rerender, submitLabel, onSubmit, onMissing, kuma = null, todaySpend = null, bump = false }) {
-  const cats = listWithCurrent(state.categories.filter(c => c.type === f.type), f.categoryId);
-  const amount = amountValue(f.amountStr);
-  const ready = amount > 0 && cats.some(c => c.id === f.categoryId);
-  const set = patch => { Object.assign(f, patch); rerender(); };
-
-  const top = el('div', { class: 'input-top' },
-    el('div', { class: 'seg' }, [['expense', '支出'], ['income', '収入']].map(([t, label]) =>
-      el('button', { class: t === f.type ? 'on' : '', onclick: () => { if (t !== f.type) set({ type: t, categoryId: null }); } }, label))),
-    todaySpend === null ? null : el('div', { class: 'today-spend' }, '今日の支出 ', el('b', {}, formatYen(todaySpend))));
-
-  const amountRow = el('div', { class: 'amount-row' }, amountView(f.amountStr), kuma);
-
-  const grid = el('div', { class: 'cat-grid' },
-    cats.map(c => el('button', {
-      class: 'cat' + (c.id === f.categoryId ? ' on' : ''),
-      style: `--cat-bg:${colorOf(c).bg};--cat-strong:${colorOf(c).strong}`,
-      onclick: () => set({ categoryId: c.id }),
-    }, c.name)),
-    f.type === 'income' && cats.length === 0
-      ? el('button', {
-        class: 'cat add',
-        onclick: async () => {
-          const name = await askText('収入の分類の名前を入れてね');
-          if (!name) return;
-          try {
-            set({ categoryId: (await addCategory('income', name)).id });
-          } catch (e) {
-            showToast('保存できませんでした：' + e.message);
-          }
-        },
-      }, '＋ 分類を追加')
-      : null);
-
-  const methods = f.type === 'expense'
-    ? el('div', { class: 'chips' }, listWithCurrent(state.methods, f.methodId).map(m =>
-      el('button', { class: 'chip' + (m.id === f.methodId ? ' on' : ''), onclick: () => set({ methodId: m.id }) }, m.name)))
-    : null;
-
-  const today = todayStr();
-  const yesterday = addDays(today, -1);
-  const todayChip = el('button', { class: 'chip', onclick: () => set({ date: today }) }, '今日');
-  const yesterdayChip = el('button', { class: 'chip', onclick: () => set({ date: yesterday }) }, '昨日');
-  const pickLabel = document.createTextNode('');
-  // A date change must not re-render: iOS keeps its picker open and sends later picks and
-  // ［リセット］ (an empty value) to the same <input>, and drops them once it is replaced.
-  const pickChip = el('label', { class: 'chip date-chip' }, pickLabel,
-    el('input', {
-      type: 'date', class: 'date-input', value: f.date,
-      onchange: e => { f.date = e.target.value || todayStr(); paintDates(); },
-    }));
-  const paintDates = () => {
-    const custom = f.date !== today && f.date !== yesterday;
-    todayChip.classList.toggle('on', f.date === today);
-    yesterdayChip.classList.toggle('on', f.date === yesterday);
-    pickChip.classList.toggle('on', custom);
-    pickLabel.data = custom ? formatDateLabel(f.date) : '日付を選ぶ';
-  };
-  paintDates();
-  const dates = el('div', { class: 'chips' }, todayChip, yesterdayChip, pickChip,
-    el('button', { class: 'chip' + (f.memo ? ' on' : ''), onclick: () => set({ memoOpen: !f.memoOpen }) }, '✏️メモ'));
-
-  const memo = f.memoOpen
-    ? el('input', { class: 'memo', type: 'text', placeholder: 'メモ', value: f.memo, oninput: e => { f.memo = e.target.value; } })
-    : null;
-
-  const pad = el('div', { class: 'keypad' },
-    keyButtons(k => {
-      if (belowZeroOnEquals(k, f.amountStr)) onMissing(SCENES.belowZero);
-      else set({ amountStr: applyKey(f.amountStr, k) });
-    }),
-    el('button', {
-      class: 'record' + (ready ? '' : ' not-ready') + (bump ? ' bump' : ''),
-      onclick: () => {
-        if (Date.now() < busyUntil) return;
-        if (!ready) { onMissing(missingScene(f.amountStr)); return; }
-        busyUntil = Date.now() + GUARD_MS;
-        onSubmit();
-      },
-    }, submitLabelParts(submitLabel)));
-
-  return el('div', { class: 'entry-form' }, top, amountRow, grid, methods, dates, memo, pad);
-}
-
-// Editor sheet for an existing entry (opened from the calendar or the history).
+// Editor sheet for an existing entry (opened from the calendar, the history and the reports). Spec 7.
 export function openEditor(entry) {
   const f = {
     type: entry.type, amountStr: String(entry.amount), categoryId: entry.categoryId,
     methodId: entry.methodId ?? pickDefaultMethod(state.methods, state.settings.lastMethodId),
-    date: entry.date, memo: entry.memo ?? '', memoOpen: Boolean(entry.memo),
+    date: entry.date, memo: entry.memo ?? '', panel: 'keys', warning: null, shake: false,
   };
   const save = async () => {
     try {
@@ -287,16 +245,24 @@ export function openEditor(entry) {
     closeSheet();
     showToast(SCENES.deleted.line, { image: SCENES.deleted.image });
   };
-  const draw = () => openSheet(el('div', { class: 'editor' },
-    el('div', { class: 'sheet-head' },
-      el('button', { class: 'link', onclick: closeSheet }, '閉じる'),
-      el('b', {}, '記録を直す'),
-      el('button', { class: 'link danger', onclick: del }, '削除')),
-    buildForm(f, {
-      rerender: draw,
-      submitLabel: '保存する',
-      onSubmit: save,
-      onMissing: scene => showToast(scene.line, { image: scene.image }),
-    })));
+  const draw = () => {
+    const cats = listWithCurrent(state.categories.filter(c => c.type === f.type), f.categoryId);
+    const cat = cats.find(c => c.id === f.categoryId);
+    if (!cat) f.panel = 'cats';
+    const set = patch => { Object.assign(f, patch); draw(); };
+    const body = f.panel === 'cats'
+      ? [el('div', { class: 'panel-label' }, '分類をえらんでね'),
+        catGrid(cats, f.categoryId, id => set({ categoryId: id, panel: 'keys' }))]
+      : [el('button', { class: 'cat-change', style: `--ink:${colorOf(cat).ink}`, onclick: () => set({ panel: 'cats' }) },
+        iconSvg(iconOf(cat)), el('span', { class: 'cat-change-name' }, cat.name), el('span', { class: 'cat-change-go' }, '変える ›')),
+      ...entryBody(f, { rerender: draw, submitLabel: '保存する', onSubmit: save })];
+    openSheet(el('div', { class: 'editor' },
+      el('div', { class: 'sheet-head' },
+        el('button', { class: 'link', onclick: closeSheet }, '閉じる'),
+        el('b', {}, '記録を直す'),
+        el('button', { class: 'link danger', onclick: del }, '削除')),
+      typeSeg(f.type, t => set({ type: t, categoryId: null })),
+      ...body));
+  };
   draw();
 }

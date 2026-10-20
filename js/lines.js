@@ -11,7 +11,6 @@ export const LINES = {
   home: '今月もいっしょにがんばろ',
   backupNudge: 'そろそろバックアップしとこ？',
   backupDone: 'ありがとう！安心だね',
-  missing: '金額と分類を入れてね',
   belowZero: '金額が0円以下になってるよ',
   // Ver.1.3.0 (big input). {amount} is filled in by screens/input.js.
   kept: '{amount}円はとっておいたよ',

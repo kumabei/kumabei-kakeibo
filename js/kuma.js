@@ -17,7 +17,6 @@ export const SCENES = {
   home: { image: 'k01', line: LINES.home },
   backupNudge: { image: 'k07', line: LINES.backupNudge },
   backupDone: { image: 'k02', line: LINES.backupDone },
-  missing: { image: 'k08', line: LINES.missing },
   belowZero: { image: 'k08', line: LINES.belowZero },
   kept: { image: 'k16', line: LINES.kept }, // the amount is filled in by screens/input.js
   autoRecorded: { image: 'k09', line: LINES.autoRecorded }, // the line is filled in by fixed.js autoRecordLine
