@@ -1,6 +1,7 @@
 // Small DOM helpers shared by the screens.
 import { addMonths, formatMonthLabel, colorOf, formatYen, formatDateShort, memoHead } from './logic.js';
 import { imageSrc } from './kuma.js';
+import { PICKER_ICONS, iconSvg } from './icons.js';
 
 // el('button', { class: 'x', onclick: fn }, 'text', child). Strings become text nodes (never HTML).
 export function el(tag, props = {}, ...children) {
@@ -95,6 +96,23 @@ export function askChoice(image, line, choices) {
             class: 'dialog-btn' + (i === 0 ? ' primary' : ''),
             onclick: () => { backdrop.remove(); resolve(value); },
           }, label)))));
+    document.body.append(backdrop);
+  });
+}
+
+// Picture chooser (Ver.1.3.0 spec 6-3): 5 per row, the current one framed. Resolves with the tapped
+// picture's name, or null for the bottom button (やめる when changing, あとで when adding).
+export function askIcon(current, cancelLabel = 'やめる') {
+  return new Promise(resolve => {
+    const finish = value => { backdrop.remove(); resolve(value); };
+    const backdrop = el('div', { class: 'dialog-backdrop' },
+      el('div', { class: 'dialog icon-dialog' },
+        el('div', { class: 'dialog-title' }, '絵をえらんでね'),
+        el('div', { class: 'icon-grid' }, PICKER_ICONS.map(name =>
+          el('button', { class: 'icon-cell', 'aria-pressed': String(name === current), 'aria-label': name, onclick: () => finish(name) },
+            iconSvg(name)))),
+        el('div', { class: 'dialog-actions' },
+          el('button', { class: 'dialog-btn', onclick: () => finish(null) }, cancelLabel))));
     document.body.append(backdrop);
   });
 }

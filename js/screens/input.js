@@ -10,7 +10,7 @@ import { manualCheck, manualCheckLine, deleteConfirmText } from '../fixed.js';
 import { SCENES, FIXED_ASK_IMAGE, recordReaction, renderKuma } from '../kuma.js';
 import { LINES } from '../lines.js';
 import { iconOf, iconSvg } from '../icons.js';
-import { el, setChildren, showToast, openSheet, closeSheet, askText, askChoice } from '../ui.js';
+import { el, setChildren, showToast, openSheet, closeSheet, askText, askChoice, askIcon } from '../ui.js';
 import { show } from '../nav.js';
 import {
   typeSeg, catGrid, payRow, amountBox, keypad, whenRow, changePanel, amountWarning, belowZeroOnEquals,
@@ -153,8 +153,9 @@ function addIncomeButton(onAdded) {
 async function addIncomeCategory(onAdded) {
   const name = await askText('収入の分類の名前を入れてね'); // first, inside the tap, so iOS shows the keyboard
   if (!name) return;
+  const icon = await askIcon(null, 'あとで');
   try {
-    onAdded((await addCategory('income', name)).id);
+    onAdded((await addCategory('income', name, icon)).id);
   } catch (e) {
     showToast('保存できませんでした：' + e.message);
   }

@@ -1,7 +1,8 @@
 // Settings: categories and payment methods (add, rename, reorder, hide) and the backup.
 import { state, saveItem, reorderItems, addCategory, addMethod } from '../state.js';
 import { allSorted, canHide, colorOf, formatDateTime } from '../logic.js';
-import { el, setChildren, makeSortable, showToast, askText } from '../ui.js';
+import { el, setChildren, makeSortable, showToast, askText, askIcon } from '../ui.js';
+import { iconOf, iconSvg } from '../icons.js';
 import { exportBackup, importBackup } from '../backup.js';
 import { show, rerender } from '../nav.js';
 import { VERSION } from '../version.js';
@@ -27,12 +28,20 @@ function section(title, storeName, items, add) {
   const list = el('div', { class: 'item-list' }, allSorted(items).map(item =>
     el('div', { class: 'item-row' + (item.hidden ? ' hidden-item' : ''), 'data-id': item.id },
       el('span', { class: 'drag-handle', 'aria-label': '並べ替え' }, '≡'),
-      storeName === 'categories' ? el('span', { class: 'dot', style: `background:${colorOf(item).strong}` }) : null,
+      storeName === 'categories'
+        ? el('span', { class: 'item-icon', style: `--ink:${colorOf(item).ink}` }, iconSvg(iconOf(item)))
+        : null,
       el('span', { class: 'item-name' }, item.name),
       el('button', {
         class: 'small',
         onclick: () => guarded(async () => { const name = await askText('名前を入れてね', item.name); if (name) await saveItem(storeName, { ...item, name }); }),
       }, '名前'),
+      storeName === 'categories'
+        ? el('button', {
+          class: 'small',
+          onclick: () => guarded(async () => { const icon = await askIcon(iconOf(item)); if (icon) await saveItem(storeName, { ...item, icon }); }),
+        }, '絵')
+        : null,
       el('button', { class: 'small', onclick: () => toggleHidden(storeName, item) }, item.hidden ? '表示する' : 'かくす'))));
   makeSortable(list, ids => guarded(() => reorderItems(storeName, ids)));
   return el('section', { class: 'card' },
@@ -65,8 +74,8 @@ export function render(root) {
     el('div', { class: 'settings-head' },
       el('button', { class: 'link', onclick: () => show('home') }, '‹ もどる'),
       el('h1', {}, '設定')),
-    section('支出の分類', 'categories', state.categories.filter(c => c.type === 'expense'), name => addCategory('expense', name)),
-    section('収入の分類', 'categories', state.categories.filter(c => c.type === 'income'), name => addCategory('income', name)),
+    section('支出の分類', 'categories', state.categories.filter(c => c.type === 'expense'), async name => addCategory('expense', name, await askIcon(null, 'あとで'))),
+    section('収入の分類', 'categories', state.categories.filter(c => c.type === 'income'), async name => addCategory('income', name, await askIcon(null, 'あとで'))),
     section('支払い方法', 'methods', state.methods, name => addMethod(name)),
     fixedSection(),
     backupSection(),
