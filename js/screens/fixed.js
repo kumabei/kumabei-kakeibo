@@ -1,13 +1,14 @@
 // The fixed-cost parts of the screens: telling what was recorded automatically (spec 4-4), and the
 // "毎月の固定費" list in the settings with its add / edit sheet (spec 5-1, 6-1).
 import { state, saveFixed, catchUpFixed } from '../state.js';
-import { todayStr, monthOf, amountValue, applyKey, listWithCurrent, pickDefaultMethod, colorOf } from '../logic.js';
+import { todayStr, monthOf, amountValue, applyKey, listWithCurrent, pickDefaultMethod } from '../logic.js';
 import { listedFixed, newFixed, resumedFixed, deletedFixed, fixedRowText, autoRecordLine, askStartedLine } from '../fixed.js';
 import { SCENES, FIXED_ASK_IMAGE } from '../kuma.js';
 import { LINES } from '../lines.js';
 import { el, setChildren, openSheet, closeSheet, showToast, askChoice } from '../ui.js';
 import { currentView } from '../nav.js';
-import { keyButtons, amountView, missingScene, announce, submitLabelParts, belowZeroOnEquals } from './input.js';
+import { announce } from './input.js';
+import { catGrid, payRow, amountBox, keypad, amountWarning, belowZeroOnEquals } from './entry-parts.js';
 
 // Records the fixed costs that are due and says so: Kumabee on the input screen, a toast elsewhere.
 // Resolves with what was recorded.
@@ -82,8 +83,8 @@ export function fixedSection() {
 // everything below it is drawn again on each change.
 function openFixedSheet(existing) {
   const d = existing
-    ? { name: existing.name, amountStr: String(existing.amount), categoryId: existing.categoryId, methodId: existing.methodId, day: existing.day }
-    : { name: '', amountStr: '', categoryId: null, methodId: pickDefaultMethod(state.methods, state.settings.lastMethodId), day: null };
+    ? { name: existing.name, amountStr: String(existing.amount), categoryId: existing.categoryId, methodId: existing.methodId, day: existing.day, warning: null, shake: false }
+    : { name: '', amountStr: '', categoryId: null, methodId: pickDefaultMethod(state.methods, state.settings.lastMethodId), day: null, warning: null, shake: false };
   const body = el('div');
   const nameInput = el('input', {
     type: 'text', class: 'memo', placeholder: '名前（例：住宅ローン）', value: d.name, enterkeyhint: 'done',
@@ -120,35 +121,32 @@ function openFixedSheet(existing) {
     const ready = d.name.trim() !== '' && amount > 0 && cats.some(c => c.id === d.categoryId)
       && methods.some(m => m.id === d.methodId) && d.day !== null;
     const set = patch => { Object.assign(d, patch); drawBody(); };
+    const shake = d.shake;
+    d.shake = false;
     setChildren(body,
       el('div', { class: 'fixed-label' }, '金額'),
-      amountView(d.amountStr),
+      amountBox(d.amountStr, d.warning, shake),
       el('div', { class: 'fixed-label' }, '分類'),
-      el('div', { class: 'cat-grid' }, cats.map(c => el('button', {
-        class: 'cat' + (c.id === d.categoryId ? ' on' : ''),
-        style: `--cat-bg:${colorOf(c).bg};--cat-strong:${colorOf(c).strong}`,
-        onclick: () => set({ categoryId: c.id }),
-      }, c.name))),
+      catGrid(cats, d.categoryId, id => set({ categoryId: id })),
       el('div', { class: 'fixed-label' }, '支払い方法'),
-      el('div', { class: 'chips' }, methods.map(m =>
-        el('button', { class: 'chip' + (m.id === d.methodId ? ' on' : ''), onclick: () => set({ methodId: m.id }) }, m.name))),
+      payRow(methods, d.methodId, id => set({ methodId: id })),
       el('div', { class: 'fixed-label' }, '毎月何日'),
       el('div', { class: 'day-grid' }, Array.from({ length: 31 }, (_, i) => i + 1).map(n =>
         el('button', { class: 'day' + (n === d.day ? ' on' : ''), onclick: () => set({ day: n }) }, String(n)))),
       d.day >= 29 ? el('div', { class: 'muted fixed-note' }, 'その日がない月は、月末に記録します') : null,
-      el('div', { class: 'keypad' },
-        keyButtons(k => {
-          if (belowZeroOnEquals(k, d.amountStr)) showToast(SCENES.belowZero.line);
-          else set({ amountStr: applyKey(d.amountStr, k) });
-        }),
-        el('button', {
-          class: 'record' + (ready ? '' : ' not-ready'),
-          onclick: () => {
-            if (ready) submit();
-            else if (missingScene(d.amountStr) === SCENES.belowZero) showToast(SCENES.belowZero.line);
-            else showToast('名前・金額・分類・支払い方法・日を入れてね');
-          },
-        }, submitLabelParts(existing ? '保存する' : '登録する'))));
+      keypad(k => {
+        if (belowZeroOnEquals(k, d.amountStr)) set({ warning: LINES.belowZero, shake: true });
+        else set({ amountStr: applyKey(d.amountStr, k), warning: null });
+      }, {
+        label: existing ? '保存する' : '登録する',
+        ready,
+        onSubmit: () => {
+          if (ready) { submit(); return; }
+          const warning = amountWarning(d.amountStr);
+          if (warning) set({ warning, shake: true });
+          else showToast('名前・金額・分類・支払い方法・日を入れてね');
+        },
+      }));
   }
 
   drawBody();
