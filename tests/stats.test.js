@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   NO_CATEGORY, categoryKey, categoryName, periodTotals, categoryBreakdown, formatShare, savingsRate, formatRate,
-  monthlySeries, categoryEntries, averageMonths, monthlyAverage,
+  monthlySeries, categoryEntries, methodEntries, averageMonths, monthlyAverage,
 } from '../js/stats.js';
 
 const C = (id, type, name, order, color, hidden = false) => ({ id, type, name, order, color, hidden });
@@ -104,6 +104,15 @@ test('categoryEntries: one category, one month, one type, newest first', () => {
   assert.deepEqual(categoryEntries(entries, categories, '2026-10', 'expense', 'e01'), [c, b, a]);
   assert.deepEqual(categoryEntries(entries, categories, '2026-10', 'expense', NO_CATEGORY), [gone]);
   assert.deepEqual(categoryEntries(entries, categories, '2026-09', 'expense', 'e01'), []);
+});
+
+test('methodEntries: the expenses paid one way in one month, newest first', () => {
+  const a = { ...E('expense', 1, '2026-10-02', 'e01'), methodId: 'm2' };
+  const b = { ...E('expense', 2, '2026-10-05', 'gone'), methodId: 'm2' };
+  const entries = [a, b, E('expense', 3, '2026-10-05', 'e01'), { ...E('expense', 4, '2026-11-01', 'e01'), methodId: 'm2' },
+    { ...E('income', 5, '2026-10-03', 'i01'), methodId: null }];
+  assert.deepEqual(methodEntries(entries, '2026-10', 'm2'), [b, a]); // a missing category is still listed
+  assert.deepEqual(methodEntries(entries, '2026-10', 'm9'), []);
 });
 
 test('averageMonths: from the first month of all entries (or January) to this month (or December)', () => {

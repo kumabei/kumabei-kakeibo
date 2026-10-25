@@ -8,13 +8,11 @@ import { exportBackup } from '../backup.js';
 import { show } from '../nav.js';
 import { fixedSummary } from '../fixed.js';
 import {
-  startView, switchSpan, step, setType, openCategoryYear, openEntries, back, pickMonth,
+  startView, switchSpan, step, setType, openCategoryYear, openEntries, openMethodEntries, back, pickMonth,
 } from '../report-nav.js';
-import { monthView, yearView, categoryYearView, entriesView } from './report.js';
+import { monthView, yearView, categoryYearView, entriesView, methodEntriesView } from './report.js';
 
 let view = null; // js/report-nav.js; kept while the home tab is open, reset when it is entered again
-
-const row = (label, value, cls = '') => el('div', { class: 'row ' + cls }, el('span', {}, label), el('span', {}, value));
 
 function nudgeBanner() {
   return el('div', { class: 'nudge' },
@@ -25,12 +23,16 @@ function nudgeBanner() {
       el('button', { onclick: () => updateSettings({ nudgeSnoozedOn: todayStr() }) }, 'あとで')));
 }
 
-function breakdownCard(ym) {
+// Ver.1.3.1: a row opens that payment method's expenses of the month.
+function breakdownCard(ym, act) {
   const breakdown = methodBreakdown(state.entries, state.methods, ym);
   return el('div', { class: 'card' },
     el('div', { class: 'card-title' }, '支出の内訳（支払い方法別）'),
     breakdown.length
-      ? breakdown.map(b => row(b.name, formatYen(b.amount)))
+      ? breakdown.map(b => el('button', { class: 'cat-row method-row', onclick: () => act.openMethodEntries(b.methodId, ym) },
+        el('span', { class: 'cat-row-name' }, b.name),
+        el('span', { class: 'cat-row-amount' }, formatYen(b.amount)),
+        el('span', { class: 'chevron' }, '›')))
       : el('div', { class: 'muted' }, 'まだ支出はありません'));
 }
 
@@ -71,6 +73,7 @@ export function render(root, { entering = false } = {}) {
     switchSpan: kind => go(switchSpan(view, kind, today)),
     openCategoryYear: id => go(openCategoryYear(view, id, window.scrollY), 0),
     openEntries: (id, ym) => go(openEntries(view, id, ym, window.scrollY), 0),
+    openMethodEntries: (id, ym) => go(openMethodEntries(view, id, ym, window.scrollY), 0),
     pickMonth: ym => go(pickMonth(view, ym), 0),
     back: () => { const r = back(view); go(r.view, r.scrollY); },
   };
@@ -78,10 +81,11 @@ export function render(root, { entering = false } = {}) {
   renderKuma(kuma, homeScene(today));
   const top = view.kind === 'month' || view.kind === 'year';
   const body = {
-    month: () => [...monthView(view, act), breakdownCard(view.ym), fixedCard(view.ym), kuma],
+    month: () => [...monthView(view, act), breakdownCard(view.ym, act), fixedCard(view.ym), kuma],
     year: () => [...yearView(view, act, today), kuma],
     categoryYear: () => categoryYearView(view, act, today),
     entries: () => entriesView(view, act),
+    methodEntries: () => methodEntriesView(view, act),
   }[view.kind]();
 
   setChildren(root,

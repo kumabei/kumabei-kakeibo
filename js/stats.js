@@ -83,6 +83,11 @@ export function categoryEntries(entries, categories, ym, type, categoryId) {
     e.type === type && monthOf(e.date) === ym && categoryKey(e, categories) === categoryId));
 }
 
+// Ver.1.3.1: the expenses paid one way (a row of the home's payment breakdown) in month ym.
+export function methodEntries(entries, ym, methodId) {
+  return sortNewestFirst(entries.filter(e => e.type === 'expense' && monthOf(e.date) === ym && e.methodId === methodId));
+}
+
 const ymIndex = ym => Number(ym.slice(0, 4)) * 12 + Number(ym.slice(5, 7));
 
 // Spec 9: how many months the year's total is divided by. From the oldest month of all entries

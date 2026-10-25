@@ -1,12 +1,12 @@
 // Cache the app shell so the app opens offline. Bump VERSION (here and in js/version.js) on every release.
-const VERSION = '1.3.0';
+const VERSION = '1.3.1';
 const CACHE = 'kumabei-kakeibo-' + VERSION;
 // Kept JSON-compatible (double quotes, no trailing comma): tests/sw.test.js parses this list.
 const FILES = [
   "./", "index.html", "manifest.json", "icon-180.png", "icon-512.png",
   "css/style.css",
   "js/app.js", "js/db.js", "js/state.js", "js/nav.js", "js/ui.js", "js/logic.js", "js/kuma.js",
-  "js/lines.js", "js/version.js", "js/backup.js", "js/fixed.js", "js/stats.js", "js/chart.js", "js/report-nav.js", "js/icons.js", "js/icon-paths.js",
+  "js/lines.js", "js/version.js", "js/backup.js", "js/fixed.js", "js/stats.js", "js/chart.js", "js/report-nav.js", "js/icons.js", "js/icon-paths.js", "js/swipe.js",
   "js/screens/input.js", "js/screens/home.js", "js/screens/calendar.js", "js/screens/history.js",
   "js/screens/settings.js", "js/screens/fixed.js", "js/screens/report.js", "js/screens/entry-parts.js",
   "img/kuma/k01.png", "img/kuma/k02.png", "img/kuma/k06.png", "img/kuma/k07.png", "img/kuma/k08.png",

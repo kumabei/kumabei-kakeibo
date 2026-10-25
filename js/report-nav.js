@@ -1,8 +1,8 @@
 // Which report the home screen shows, and how it moves (Ver.1.2.0 spec 3, 8). Pure: every function takes
 // a view and returns a new one. home.js keeps the current view and draws it.
 //
-// view = { kind: 'month' | 'year' | 'categoryYear' | 'entries', ym: 'YYYY-MM', year: number,
-//          type: 'expense' | 'income', categoryId: string | null, stack: [{ view, scrollY }] }
+// view = { kind: 'month' | 'year' | 'categoryYear' | 'entries' | 'methodEntries', ym: 'YYYY-MM', year: number,
+//          type: 'expense' | 'income', categoryId: string | null, methodId (methodEntries only), stack: [{ view, scrollY }] }
 // stack holds where ＜戻る goes back to, newest last (at most 2: year → categoryYear → entries).
 import { monthOf, addMonths } from './logic.js';
 
@@ -52,6 +52,11 @@ export function openCategoryYear(view, categoryId, scrollY) {
 // Month view or category's year → the entries of one category in one month.
 export function openEntries(view, categoryId, ym, scrollY) {
   return push(view, scrollY, { kind: 'entries', categoryId, ym });
+}
+
+// Ver.1.3.1: a row of the month view's payment breakdown → that payment method's expenses in month ym.
+export function openMethodEntries(view, methodId, ym, scrollY) {
+  return push(view, scrollY, { kind: 'methodEntries', methodId, ym });
 }
 
 // ＜戻る: the view it came from, and the scroll position to put back.

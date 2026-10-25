@@ -4,11 +4,11 @@ import { state } from '../state.js';
 import { formatYen, formatMonthLabel } from '../logic.js';
 import {
   periodTotals, categoryBreakdown, formatShare, savingsRate, formatRate, monthlySeries, categoryEntries,
-  averageMonths, monthlyAverage, categoryColors, categoryName,
+  averageMonths, monthlyAverage, categoryColors, categoryName, methodEntries,
 } from '../stats.js';
 import { donutChart, barChart } from '../chart.js';
 import { el, monthNav, entryRow } from '../ui.js';
-import { openEditor } from './input.js';
+import { openEditor, swipeDelete } from './input.js';
 
 const TYPE_LABEL = { expense: '支出', income: '収入' };
 const row = (label, value, cls = '') => el('div', { class: 'row ' + cls }, el('span', {}, label), el('span', {}, value));
@@ -111,13 +111,20 @@ export function categoryYearView(view, act, today) {
   ];
 }
 
+function entryList(list) {
+  return list.length
+    ? list.map(e => entryRow(e, state, () => openEditor(e), { showDate: true, onDelete: () => swipeDelete(e) }))
+    : [el('div', { class: 'muted report-empty' }, 'この月の記録はありません')];
+}
+
 // Spec 7: the entries of one category in one month. Tapping one opens the editor; the list stays.
 export function entriesView(view, act) {
   const list = categoryEntries(state.entries, state.categories, view.ym, view.type, view.categoryId);
-  return [
-    backHead(categoryName(view.categoryId, state.categories), formatMonthLabel(view.ym), act),
-    ...(list.length
-      ? list.map(e => entryRow(e, state, () => openEditor(e), { showDate: true }))
-      : [el('div', { class: 'muted report-empty' }, 'この月の記録はありません')]),
-  ];
+  return [backHead(categoryName(view.categoryId, state.categories), formatMonthLabel(view.ym), act), ...entryList(list)];
+}
+
+// Ver.1.3.1: the expenses paid one way in one month, from a row of the home's payment breakdown.
+export function methodEntriesView(view, act) {
+  const name = state.methods.find(m => m.id === view.methodId)?.name ?? '';
+  return [backHead(name, formatMonthLabel(view.ym), act), ...entryList(methodEntries(state.entries, view.ym, view.methodId))];
 }

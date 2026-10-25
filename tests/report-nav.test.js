@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  startView, monthForYear, switchSpan, step, setType, openCategoryYear, openEntries, back, pickMonth,
+  startView, monthForYear, switchSpan, step, setType, openCategoryYear, openEntries, openMethodEntries, back, pickMonth,
 } from '../js/report-nav.js';
 
 const today = '2026-10-07';
@@ -68,6 +68,18 @@ test('month → entries → back', () => {
   const { view, scrollY } = back(list);
   assert.deepEqual(view, month);
   assert.equal(scrollY, 300);
+});
+
+test('month → the entries of one payment method → back', () => {
+  const month = startView(today);
+  const list = openMethodEntries(month, 'm2', '2026-10', 900);
+  assert.equal(list.kind, 'methodEntries');
+  assert.equal(list.methodId, 'm2');
+  assert.equal(list.ym, '2026-10');
+  assert.equal(list.type, 'expense');
+  const { view, scrollY } = back(list);
+  assert.deepEqual(view, month);
+  assert.equal(scrollY, 900);
 });
 
 test('pickMonth: a bar of the year chart opens that month, type kept', () => {

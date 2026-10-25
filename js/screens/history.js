@@ -3,7 +3,7 @@ import { state } from '../state.js';
 import { todayStr, monthOf, entriesInMonth, sortNewestFirst } from '../logic.js';
 import { SCENES, renderKuma } from '../kuma.js';
 import { el, setChildren, monthNav, entryRow } from '../ui.js';
-import { openEditor } from './input.js';
+import { openEditor, swipeDelete } from './input.js';
 
 let ym = null;
 
@@ -14,6 +14,6 @@ export function render(root, { entering = false } = {}) {
   renderKuma(kuma, list.length ? { image: SCENES.peek.image } : SCENES.empty);
   setChildren(root,
     monthNav(ym, next => { ym = next; render(root); }),
-    list.map(e => entryRow(e, state, () => openEditor(e), { showDate: true })),
+    list.map(e => entryRow(e, state, () => openEditor(e), { showDate: true, onDelete: () => swipeDelete(e) })),
     kuma);
 }

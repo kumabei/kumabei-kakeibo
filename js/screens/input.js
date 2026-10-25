@@ -219,6 +219,34 @@ async function undo(entry) {
   show('input');
 }
 
+// Ver.1.3.1: 削除 on a swiped row of a list. Gone at once, with ［取り消す］, which puts the same entry back.
+// An entry of a fixed cost asks first, as in the editor. Resolves to false when nothing was deleted.
+export async function swipeDelete(entry) {
+  if (entry.fixedId && !confirm(deleteConfirmText(entry, state.fixed))) return false;
+  try {
+    await removeEntry(entry.id);
+  } catch (e) {
+    showToast('消せませんでした：' + e.message);
+    return false;
+  }
+  const what = `${state.categories.find(c => c.id === entry.categoryId)?.name ?? ''} ${formatYen(entry.amount)}`;
+  showToast(`${what}を${LINES.deleted}`, {
+    image: SCENES.deleted.image,
+    actionLabel: '取り消す',
+    ms: RECORDED_MS,
+    onAction: async () => {
+      try {
+        await updateEntry(entry); // updateEntry adds an entry that is not there
+      } catch (e) {
+        showToast('もどせませんでした：' + e.message);
+        return;
+      }
+      showToast(`${what}を${LINES.restored}`, { image: SCENES.recorded.image });
+    },
+  });
+  return true;
+}
+
 // Editor sheet for an existing entry (opened from the calendar, the history and the reports). Spec 7.
 export function openEditor(entry) {
   const f = {

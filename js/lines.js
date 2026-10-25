@@ -16,6 +16,7 @@ export const LINES = {
   kept: '{amount}円はとっておいたよ',
   missingAmount: '金額を入れてね',
   edited: '直しました',
+  restored: 'もどしたよ', // Ver.1.3.1: ［取り消す］ after a swipe delete
   // Fixed costs. {…} marks are filled in by js/fixed.js.
   autoRecorded: '{names}、自動で記録しておいたよ～！',
   autoRecordedMany: '{name}など{count}件、自動で記録しておいたよ～！',

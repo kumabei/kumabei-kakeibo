@@ -2,6 +2,7 @@
 import { addMonths, formatMonthLabel, colorOf, formatYen, formatDateShort, memoHead } from './logic.js';
 import { imageSrc } from './kuma.js';
 import { PICKER_ICONS, iconSvg } from './icons.js';
+import { swipeable } from './swipe.js';
 
 // el('button', { class: 'x', onclick: fn }, 'text', child). Strings become text nodes (never HTML).
 export function el(tag, props = {}, ...children) {
@@ -124,19 +125,21 @@ export function monthNav(ym, onChange) {
     el('button', { class: 'nav-btn', 'aria-label': '次の月', onclick: () => onChange(addMonths(ym, 1)) }, '›'));
 }
 
-// One entry in a list (calendar and history). The dot has the category's color.
-export function entryRow(entry, { categories, methods }, onTap, { showDate = false } = {}) {
+// One entry in a list (calendar, history and the reports). The dot has the category's color.
+// onDelete: the row can be swiped to the left to show 削除 (Ver.1.3.1, js/swipe.js).
+export function entryRow(entry, { categories, methods }, onTap, { showDate = false, onDelete = null } = {}) {
   const cat = categories.find(c => c.id === entry.categoryId);
   const method = methods.find(m => m.id === entry.methodId);
   const income = entry.type === 'income';
   const sub = (income ? '収入' : method?.name ?? '') + (entry.memo ? '・' + memoHead(entry.memo) : '');
-  return el('button', { class: 'entry-row', onclick: onTap },
+  const row = el('button', { class: 'entry-row', onclick: onTap },
     el('span', { class: 'dot', style: `background:${colorOf(cat).strong}` }),
     el('span', { class: 'entry-main' },
       el('span', { class: 'entry-cat' }, (showDate ? formatDateShort(entry.date) + ' ' : '') + (cat?.name ?? '（分類なし）')
         + (entry.fixedId ? ' 🔁' : '')), // fixed costs spec 4-3
       el('span', { class: 'entry-sub' }, sub)),
     el('span', { class: 'entry-amount' + (income ? ' income' : '') }, (income ? '+' : '') + formatYen(entry.amount)));
+  return onDelete ? swipeable(row, onDelete) : row;
 }
 
 // Drag-to-reorder for a vertical list. Rows carry data-id; dragging starts on .drag-handle.

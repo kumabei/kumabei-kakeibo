@@ -5,7 +5,7 @@ import {
 } from '../logic.js';
 import { SCENES, renderKuma } from '../kuma.js';
 import { el, setChildren, monthNav, entryRow } from '../ui.js';
-import { openEditor } from './input.js';
+import { openEditor, swipeDelete } from './input.js';
 
 const WEEK = ['日', '月', '火', '水', '木', '金', '土'];
 let ym = null;
@@ -42,6 +42,6 @@ export function render(root, { entering = false } = {}) {
     monthNav(ym, next => { ym = next; selected = null; render(root); }),
     grid,
     el('div', { class: 'day-head' }, inMonth ? formatDateLabel(selected) : '日をタップしてね'),
-    list.map(e => entryRow(e, state, () => openEditor(e))),
+    list.map(e => entryRow(e, state, () => openEditor(e), { onDelete: () => swipeDelete(e) })),
     kuma);
 }
