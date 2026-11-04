@@ -167,6 +167,17 @@ export function fixedSummary(fixedList, entries, ym) {
   return { rows, recorded: sum(rows.filter(r => r.done)), total: sum(rows) };
 }
 
+// Ver.1.3.2: the calendar's 🔁予定 marks for month ym. The home card's rows still to come, by their
+// payment date, so the calendar and the home card always agree. No amount on the calendar itself.
+export function plannedByDate(fixedList, entries, ym) {
+  const byDate = {};
+  for (const r of fixedSummary(fixedList, entries, ym)?.rows ?? []) {
+    if (r.done) continue;
+    (byDate[payDate(ym, r.day)] ??= []).push({ id: r.id, name: r.name, amount: r.amount, day: r.day });
+  }
+  return byDate;
+}
+
 export function fill(template, vars) {
   return template.replace(/\{(\w+)\}/g, (_, k) => String(vars[k]));
 }

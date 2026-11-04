@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { newFixed, fixedSummary } from '../js/fixed.js';
+import { newFixed, fixedSummary, plannedByDate } from '../js/fixed.js';
 
 const make = (name, categoryId, amount, day, id, createdAt) => (patch = {}) => ({
   ...newFixed({ name, categoryId, amount, methodId: 'm2', day }, false, '2026-10-01', id, createdAt), ...patch,
@@ -59,4 +59,25 @@ test('a deleted fixed cost still shows the months it was paid, and nothing to co
   assert.deepEqual(fixedSummary([gone], [mark('f-1', '2026-10', 85000)], '2026-10').rows,
     [{ id: 'f-1', name: '住宅ローン', amount: 85000, done: true, day: null }]);
   assert.equal(fixedSummary([gone], [mark('f-1', '2026-10', 85000)], '2026-11'), null);
+});
+
+test('the calendar marks: the rows still to come, by their payment date; recorded ones are not there', () => {
+  const fixed = [loan({ doneThrough: '2026-10' }), wifi({ doneThrough: '2026-10' }), ins()];
+  const entries = [mark('f-1', '2026-10', 85000), mark('f-2', '2026-10', 5500)];
+  assert.deepEqual(plannedByDate(fixed, entries, '2026-10'), {
+    '2026-10-27': [{ id: 'f-3', name: '保険', amount: 12000, day: 27 }],
+  });
+  assert.deepEqual(plannedByDate(fixed, entries, '2026-11'), {
+    '2026-11-05': [{ id: 'f-2', name: 'Wi-Fi', amount: 5500, day: 5 }],
+    '2026-11-27': [
+      { id: 'f-1', name: '住宅ローン', amount: 85000, day: 27 },
+      { id: 'f-3', name: '保険', amount: 12000, day: 27 },
+    ],
+  });
+});
+
+test('the calendar marks: none before the start, and a short month uses its last day', () => {
+  assert.deepEqual(plannedByDate([loan()], [], '2026-09'), {});
+  const f = loan({ day: 31, startMonth: '2027-02', doneThrough: '2027-01' });
+  assert.deepEqual(Object.keys(plannedByDate([f], [], '2027-02')), ['2027-02-28']);
 });
