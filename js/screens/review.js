@@ -14,7 +14,7 @@ function cardBody(c) {
     c.big && el('div', { class: 'review-big' }, c.big),
     c.rows && el('ol', { class: 'review-rank' }, c.rows.map(r =>
       el('li', { class: `rank-${r.rank}` }, `${r.rank}位　${r.name}　${r.count}回`))),
-    c.details.map(d => el('div', { class: 'review-detail' }, d)),
+    ...c.details.map(d => el('div', { class: 'review-detail' }, d)),
   ];
 }
 
