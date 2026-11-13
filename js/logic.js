@@ -228,6 +228,15 @@ export function canHide(list, id) {
   return list.some(x => !x.hidden && x.id !== id);
 }
 
+// Ver.1.4.1: a hidden category or payment method can be deleted when no entry and no fixed cost (stopped
+// ones too: they can be resumed) points at it. Deleted fixed costs never record again, so they don't count.
+export function canDelete(storeName, item, entries, fixed) {
+  const key = storeName === 'categories' ? 'categoryId' : 'methodId';
+  return item.hidden
+    && !entries.some(e => e[key] === item.id)
+    && !fixed.some(f => !f.deleted && f[key] === item.id);
+}
+
 // ---- totals (always computed from entries; nothing is stored) ----
 
 export function entriesInMonth(entries, ym) {

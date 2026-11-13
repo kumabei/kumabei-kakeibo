@@ -74,6 +74,15 @@ export async function saveItem(storeName, item) {
   return item;
 }
 
+// Ver.1.4.1: deletes a category or payment method for good (the screen only offers it when canDelete).
+export async function removeItem(storeName, id) {
+  const settings = stamped();
+  await db.write({ del: { [storeName]: [id] }, settings });
+  state[storeName] = state[storeName].filter(x => x.id !== id);
+  state.settings = settings;
+  emit();
+}
+
 // icon: a picture name from js/icons.js, or null to leave it to iconOf (Ver.1.3.0 spec 6-1).
 export function addCategory(type, name, icon = null) {
   const order = nextOrder(state.categories.filter(c => c.type === type));

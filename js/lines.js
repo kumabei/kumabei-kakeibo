@@ -44,4 +44,6 @@ export const LINES = {
   featureCategory: '『{name}』をたのしんだ年',
   reviewFeature: '今年は{feature}！',
   reviewClosing: '来年もいっしょにつけようね',
+  // Ver.1.4.1: asked before a hidden category or payment method is deleted. {name} is its name.
+  deleteItem: '『{name}』を削除するよ。元には戻せないけど、いい？',
 };

@@ -66,3 +66,7 @@ test('kept: Kumabee keeps the typed amount (Ver.1.3.0 spec 5-1)', () => {
   assert.deepEqual(SCENES.kept, { image: 'k16', line: '{amount}円はとっておいたよ' });
   assert.equal(LINES.missingAmount, '金額を入れてね');
 });
+
+test('deleteItem: Kumabee asks before a category or payment method is deleted (Ver.1.4.1)', () => {
+  assert.equal(LINES.deleteItem, '『{name}』を削除するよ。元には戻せないけど、いい？');
+});

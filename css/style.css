@@ -310,3 +310,10 @@ h1 { font-size: 20px; margin: 0; }
 /* The review list's header: one line at 375px (the title is longer than the other drill-down titles). */
 .report-head-review .link, .report-head-review .report-sub { white-space: nowrap; }
 .report-head-review .report-title { flex: 1; min-width: 0; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- Ver.1.4.1 hidden categories / payment methods folded under the list ---- */
+.hidden-items { margin-top: 10px; border-top: 1px solid #f6e8ec; padding-top: 8px; }
+.hidden-items summary { cursor: pointer; padding: 8px 0; color: var(--sub-strong); font-weight: bold; }
+.hidden-items .item-row.hidden-item .item-name { text-decoration: none; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.small.danger { color: var(--minus); }
+.hidden-note { padding-top: 8px; font-size: 13px; }

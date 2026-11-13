@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   COLORS, SCHEMA_VERSION, initialCategories, initialMethods, initialSettings, newCategoryColor, colorOf,
-  visibleSorted, allSorted, listWithCurrent, pickDefaultMethod, canHide,
+  visibleSorted, allSorted, listWithCurrent, pickDefaultMethod, canHide, canDelete,
 } from '../js/logic.js';
 
 const EXPECTED = [
@@ -70,4 +70,21 @@ test('pickDefaultMethod prefers the last used visible method', () => {
 test('canHide refuses to hide the last visible item', () => {
   assert.equal(canHide([M('m1', 0), M('m2', 1)], 'm1'), true);
   assert.equal(canHide([M('m1', 0), M('m2', 1, true)], 'm1'), false);
+});
+
+// Ver.1.4.1: a hidden category or payment method can be deleted only when nothing points at it.
+test('canDelete: only a hidden item that no entry and no fixed cost uses', () => {
+  const cat = { id: 'e06', hidden: true };
+  const entry = (more) => ({ id: 'x', categoryId: 'e01', methodId: 'm1', ...more });
+  const fixed = (more) => ({ id: 'f1', categoryId: 'e16', methodId: 'm1', hidden: false, ...more });
+  assert.equal(canDelete('categories', cat, [entry()], [fixed()]), true);
+  assert.equal(canDelete('categories', { ...cat, hidden: false }, [], []), false); // still shown
+  assert.equal(canDelete('categories', cat, [entry({ categoryId: 'e06' })], []), false); // a record uses it
+  assert.equal(canDelete('categories', cat, [], [fixed({ categoryId: 'e06' })]), false); // a fixed cost uses it
+  assert.equal(canDelete('categories', cat, [], [fixed({ categoryId: 'e06', hidden: true })]), false); // stopped
+  assert.equal(canDelete('categories', cat, [], [fixed({ categoryId: 'e06', hidden: true, deleted: true })]), true);
+  const method = { id: 'm3', hidden: true };
+  assert.equal(canDelete('methods', method, [entry()], [fixed()]), true);
+  assert.equal(canDelete('methods', method, [entry({ methodId: 'm3' })], []), false);
+  assert.equal(canDelete('methods', method, [], [fixed({ methodId: 'm3' })]), false);
 });
