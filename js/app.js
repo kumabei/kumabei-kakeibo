@@ -11,13 +11,13 @@ import * as calendar from './screens/calendar.js';
 import * as history from './screens/history.js';
 import * as settings from './screens/settings.js';
 
-// Zen Maru Gothic Bold for just the characters Kumabee says (js/lines.js), plus the fixed-cost names,
-// which appear in his lines. Loaded again when a name brings new characters.
+// Zen Maru Gothic Bold for just the characters Kumabee says (js/lines.js), plus the fixed-cost names and the
+// category names (Ver.1.4.0 review lines), which appear in his lines. Loaded again when a name brings new characters.
 const fontLink = Object.assign(document.createElement('link'), { rel: 'stylesheet' });
 document.head.append(fontLink);
 let fontText = null;
 function refreshFont() {
-  const text = lineChars(state.fixed.map(f => f.name).join(''));
+  const text = lineChars(state.fixed.map(f => f.name).join('') + state.categories.map(c => c.name).join(''));
   if (text === fontText) return;
   fontText = text;
   fontLink.href = `https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700&display=swap&text=${encodeURIComponent(text)}`;
