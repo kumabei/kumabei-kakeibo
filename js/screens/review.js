@@ -57,7 +57,7 @@ function draw() {
       el('img', { class: 'review-kuma', src: imageSrc(c.image), alt: '' }),
       cardBody(c),
       el('div', { class: 'bubble' }, c.line)),
-    el('div', { class: 'review-actions' }, last
+    el('div', { class: 'review-actions' + (last ? ' last' : '') }, last
       ? [el('button', { class: 'review-sub', onclick: () => close(true) }, '一覧で見る'),
         el('button', { class: 'review-next', onclick: () => close(false) }, 'とじる')]
       : [i > 0 && el('button', { class: 'review-sub', onclick: () => go(-1) }, 'もどる'),

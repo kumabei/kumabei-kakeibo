@@ -3,7 +3,7 @@
 //
 // view = { kind: 'month' | 'year' | 'categoryYear' | 'entries' | 'methodEntries' | 'review', ym: 'YYYY-MM', year: number,
 //          type: 'expense' | 'income', categoryId: string | null, methodId (methodEntries only), stack: [{ view, scrollY }] }
-// stack holds where ＜戻る goes back to, newest last (at most 2: year → categoryYear → entries).
+// stack holds where ＜戻る goes back to, newest last (at most 3: year → categoryYear → entries, or banner → show → list from the entries view).
 import { monthOf, addMonths } from './logic.js';
 
 const yearOf = dateStr => Number(dateStr.slice(0, 4));

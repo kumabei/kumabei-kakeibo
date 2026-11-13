@@ -17,7 +17,7 @@ const fontLink = Object.assign(document.createElement('link'), { rel: 'styleshee
 document.head.append(fontLink);
 let fontText = null;
 function refreshFont() {
-  const text = lineChars(state.fixed.map(f => f.name).join('') + state.categories.map(c => c.name).join(''));
+  const text = lineChars(state.fixed.map(f => f.name).join('') + state.categories.map(c => c.name).join('') + '（分類なし）');
   if (text === fontText) return;
   fontText = text;
   fontLink.href = `https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700&display=swap&text=${encodeURIComponent(text)}`;
