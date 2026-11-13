@@ -24,8 +24,8 @@ function typeSwitch(view, act) {
     el('button', { class: t === view.type ? 'on' : '', onclick: () => { if (t !== view.type) act.setType(t); } }, TYPE_LABEL[t])));
 }
 
-function backHead(title, sub, act) {
-  return el('div', { class: 'report-head' },
+function backHead(title, sub, act, extraClass = '') {
+  return el('div', { class: ('report-head ' + extraClass).trim() },
     el('button', { class: 'link', onclick: act.back }, '‹ もどる'),
     el('b', { class: 'report-title' }, title),
     el('span', { class: 'report-sub' }, sub));
@@ -146,7 +146,7 @@ export function methodEntriesView(view, act) {
 export function reviewView(view, act, today) {
   const review = buildReview(state.entries, state.categories, state.fixed, view.year, today);
   return [
-    backHead('くまべえの1年ふりかえり', `${view.year}年`, act),
+    backHead('くまべえの1年ふりかえり', `${view.year}年`, act, 'report-head-review'),
     // Spread: el()/setChildren() flatten only one level of arrays.
     ...(review
       ? review.cards.map((card, i) => reviewItem(cardContent(card), i === 0))
