@@ -9,6 +9,9 @@ import {
 import { donutChart, barChart } from '../chart.js';
 import { el, monthNav, entryRow } from '../ui.js';
 import { openEditor, swipeDelete } from './input.js';
+import { buildReview, reviewCardShown } from '../review.js';
+import { cardContent } from '../review-text.js';
+import { reviewItem } from './review.js';
 
 const TYPE_LABEL = { expense: '支出', income: '収入' };
 const row = (label, value, cls = '') => el('div', { class: 'row ' + cls }, el('span', {}, label), el('span', {}, value));
@@ -68,6 +71,15 @@ function yearNav(year, act) {
     el('button', { class: 'nav-btn', 'aria-label': '次の年', onclick: () => act.step(1) }, '›'));
 }
 
+// Ver.1.4.0 spec 5-2: at the top of the year view.
+function reviewCard(year, act) {
+  return el('div', { class: 'card review-entry' },
+    el('div', { class: 'card-title' }, 'くまべえの1年ふりかえり'),
+    el('div', { class: 'review-entry-actions' },
+      el('button', { class: 'primary', onclick: () => act.playReview(year) }, '紙芝居で見る'),
+      el('button', { onclick: () => act.openReview(year) }, '一覧で見る')));
+}
+
 // Spec 5: year nav, totals with the savings rate, ［支出｜収入］, donut and categories, the 12 months.
 export function yearView(view, act, today) {
   const t = periodTotals(state.entries, String(view.year));
@@ -78,6 +90,7 @@ export function yearView(view, act, today) {
   const series = monthlySeries(state.entries, state.categories, view.year, view.type);
   return [
     yearNav(view.year, act),
+    reviewCardShown(state.entries, view.year, today) ? reviewCard(view.year, act) : null,
     totals,
     typeSwitch(view, act),
     breakdownCard(view, String(view.year), id => act.openCategoryYear(id)),
@@ -127,4 +140,16 @@ export function entriesView(view, act) {
 export function methodEntriesView(view, act) {
   const name = state.methods.find(m => m.id === view.methodId)?.name ?? '';
   return [backHead(name, formatMonthLabel(view.ym), act), ...entryList(methodEntries(state.entries, view.ym, view.methodId))];
+}
+
+// Ver.1.4.0 spec 5-3: the same cards as the show, one under another.
+export function reviewView(view, act, today) {
+  const review = buildReview(state.entries, state.categories, state.fixed, view.year, today);
+  return [
+    backHead('くまべえの1年ふりかえり', `${view.year}年`, act),
+    // Spread: el()/setChildren() flatten only one level of arrays.
+    ...(review
+      ? review.cards.map((card, i) => reviewItem(cardContent(card), i === 0))
+      : [el('div', { class: 'muted report-empty' }, 'この年の記録はありません')]),
+  ];
 }

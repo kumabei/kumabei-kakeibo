@@ -1,5 +1,6 @@
-// Home: the reports (month, year, one category's year, one category's entries; Ver.1.2.0), the payment-method
-// breakdown and the month's fixed costs on the month view, the backup nudge and Kumabee.
+// Home: the reports (month, year, one category's year, one category's entries; Ver.1.2.0; the year review list,
+// Ver.1.4.0), the payment-method breakdown and the month's fixed costs on the month view, the backup nudge, the
+// review banner and Kumabee.
 import { state, updateSettings } from '../state.js';
 import { todayStr, methodBreakdown, formatYen, shouldNudgeBackup } from '../logic.js';
 import { SCENES, homeScene, renderKuma, imageSrc } from '../kuma.js';
@@ -8,9 +9,13 @@ import { exportBackup } from '../backup.js';
 import { show } from '../nav.js';
 import { fixedSummary } from '../fixed.js';
 import {
-  startView, switchSpan, step, setType, openCategoryYear, openEntries, openMethodEntries, back, pickMonth,
+  startView, switchSpan, step, setType, openCategoryYear, openEntries, openMethodEntries, back, pickMonth, openReview,
 } from '../report-nav.js';
-import { monthView, yearView, categoryYearView, entriesView, methodEntriesView } from './report.js';
+import { monthView, yearView, categoryYearView, entriesView, methodEntriesView, reviewView } from './report.js';
+import { reviewBannerShown } from '../review.js';
+import { REVIEW_IMAGES } from '../review-text.js';
+import { LINES } from '../lines.js';
+import { playReview } from './review.js';
 
 let view = null; // js/report-nav.js; kept while the home tab is open, reset when it is entered again
 
@@ -34,6 +39,15 @@ function breakdownCard(ym, act) {
         el('span', { class: 'cat-row-amount' }, formatYen(b.amount)),
         el('span', { class: 'chevron' }, '›')))
       : el('div', { class: 'muted' }, 'まだ支出はありません'));
+}
+
+// Ver.1.4.0 spec 5-2: in December, until this year's review has been seen.
+function reviewBanner(year, act) {
+  return el('div', { class: 'nudge review-banner' },
+    el('img', { src: imageSrc(REVIEW_IMAGES.cover), alt: '' }),
+    el('div', { class: 'nudge-text' }, LINES.reviewBanner),
+    el('div', { class: 'nudge-actions' },
+      el('button', { class: 'primary', onclick: () => act.playReview(year) }, '見る')));
 }
 
 // Fixed costs spec 6-2: the month's fixed costs under the breakdown. Nothing when there are none.
@@ -76,6 +90,8 @@ export function render(root, { entering = false } = {}) {
     openMethodEntries: (id, ym) => go(openMethodEntries(view, id, ym, window.scrollY), 0),
     pickMonth: ym => go(pickMonth(view, ym), 0),
     back: () => { const r = back(view); go(r.view, r.scrollY); },
+    playReview: year => playReview(year, today, () => act.openReview(year)),
+    openReview: year => go(openReview(view, year, window.scrollY), 0),
   };
   const kuma = el('div', { class: 'kuma kuma-home' });
   renderKuma(kuma, homeScene(today));
@@ -86,6 +102,7 @@ export function render(root, { entering = false } = {}) {
     categoryYear: () => categoryYearView(view, act, today),
     entries: () => entriesView(view, act),
     methodEntries: () => methodEntriesView(view, act),
+    review: () => reviewView(view, act, today),
   }[view.kind]();
 
   setChildren(root,
@@ -93,6 +110,7 @@ export function render(root, { entering = false } = {}) {
       el('h1', {}, 'くまべえ家計簿'),
       el('button', { class: 'gear', 'aria-label': '設定', onclick: () => show('settings') }, '⚙️')),
     shouldNudgeBackup(state.entries, state.settings, now) ? nudgeBanner() : null,
+    reviewBannerShown(state.entries, state.settings, today) ? reviewBanner(Number(today.slice(0, 4)), act) : null,
     top ? spanSwitch(act) : null,
     body);
 }

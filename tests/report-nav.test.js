@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  startView, monthForYear, switchSpan, step, setType, openCategoryYear, openEntries, openMethodEntries, back, pickMonth,
+  startView, monthForYear, switchSpan, step, setType, openCategoryYear, openEntries, openMethodEntries, back, pickMonth, openReview,
 } from '../js/report-nav.js';
 
 const today = '2026-10-07';
@@ -89,4 +89,15 @@ test('pickMonth: a bar of the year chart opens that month, type kept', () => {
   assert.equal(month.ym, '2026-04');
   assert.equal(month.type, 'income');
   assert.deepEqual(month.stack, []);
+});
+
+test('openReview (Ver.1.4.0 spec 5-3): the list of a year, ＜戻る goes back where it came from', () => {
+  const year = switchSpan(startView('2026-12-20'), 'year', '2026-12-20');
+  const list = openReview(year, 2026, 320);
+  assert.equal(list.kind, 'review');
+  assert.equal(list.year, 2026);
+  assert.equal(list.stack.length, 1);
+  assert.deepEqual(back(list), { view: year, scrollY: 320 });
+  const month = startView('2026-12-20'); // from the home banner (the month view)
+  assert.deepEqual(back(openReview(month, 2026, 0)), { view: month, scrollY: 0 });
 });
