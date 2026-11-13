@@ -2,6 +2,7 @@
 import * as db from './db.js';
 import { newCategoryColor, migrateData, todayStr } from './logic.js';
 import { catchUpWrite, fixedEntryWrite, oneAtATime } from './fixed.js';
+import { seenYearsAfter } from './review.js';
 
 export const state = { entries: [], categories: [], methods: [], fixed: [], settings: {} };
 
@@ -133,6 +134,13 @@ export async function updateSettings(patch) {
   await db.write({ settings });
   state.settings = settings;
   emit();
+}
+
+// Ver.1.4.0 spec 5-4: the year's review has been seen (the home banner goes). A settings-only change, so the
+// backup nudge is not triggered. Nothing is saved when the year is already marked.
+export function markReviewSeen(year) {
+  const years = seenYearsAfter(state.settings, year);
+  return years ? updateSettings({ reviewSeenYears: years }) : Promise.resolve();
 }
 
 // A backup of version 1 gets the fixed costs spec 7 change before it is saved, all in one go.

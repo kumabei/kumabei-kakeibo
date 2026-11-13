@@ -10,6 +10,7 @@ const FILES = [
   "js/review.js", "js/review-text.js",
   "js/screens/input.js", "js/screens/home.js", "js/screens/calendar.js", "js/screens/history.js",
   "js/screens/settings.js", "js/screens/fixed.js", "js/screens/report.js", "js/screens/entry-parts.js",
+  "js/screens/review.js",
   "img/kuma/k01.png", "img/kuma/k02.png", "img/kuma/k06.png", "img/kuma/k07.png", "img/kuma/k08.png",
   "img/kuma/k09.png", "img/kuma/k10.png", "img/kuma/k12.png", "img/kuma/k14.png", "img/kuma/k15.png",
   "img/kuma/k16.png", "img/kuma/y01.png", "img/kuma/y02.png", "img/kuma/y03.png", "img/kuma/y04.png",

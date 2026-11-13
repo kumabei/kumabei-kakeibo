@@ -21,6 +21,15 @@ export function swipeOpens(dx, wasOpen) {
   return swipeOffset(dx, wasOpen) < -DELETE_W / 2;
 }
 
+export const FLIP = 60; // how far a horizontal swipe goes before a review card turns (Ver.1.4.0 spec 5-1)
+
+// Ver.1.4.0 spec 5-1: 1 (the next card) for a swipe to the left, -1 (the card before) to the right, 0 otherwise.
+// axis is what swipeAxis decided while the finger moved.
+export function flipStep(dx, axis) {
+  if (axis !== 'x' || Math.abs(dx) < FLIP) return 0;
+  return dx < 0 ? 1 : -1;
+}
+
 let openWrap = null;
 
 function setOpen(wrap, open) {
